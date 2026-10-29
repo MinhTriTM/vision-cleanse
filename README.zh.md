@@ -121,13 +121,57 @@ vision-cleanse /path/to/dataset --charts
 按检查/严重程度的健康问题、保留与隔离对比。无数据的图表会被跳过并
 在 `report.json` 中注明原因（不画空图）。
 
-示例图表（22 张全图见 `docs/charts.md`）：
+演示数据集的完整示例图库（22 张图表、流水线图与插图——每张图表的说明见 `docs/charts.md`）：
 
 ![每划分图片数](docs/assets/charts/split_sizes.png)
 
+![各划分占比](docs/assets/charts/split_share.png)
+
+![每类别图片数](docs/assets/charts/class_images.png)
+
+![按划分堆叠的每类别图片数](docs/assets/charts/class_split_stacked.png)
+
+![文件大小分布](docs/assets/charts/file_size_hist.png)
+
+![图片宽度分布](docs/assets/charts/width_hist.png)
+
+![图片高度分布](docs/assets/charts/height_hist.png)
+
+![宽高比分布](docs/assets/charts/aspect_hist.png)
+
+![图片面积分布](docs/assets/charts/area_hist.png)
+
+![每图框数](docs/assets/charts/instances_per_image.png)
+
+![每类别框数](docs/assets/charts/boxes_per_class.png)
+
+![框宽度分布](docs/assets/charts/box_width_hist.png)
+
+![框高度分布](docs/assets/charts/box_height_hist.png)
+
+![框面积分布](docs/assets/charts/box_area_hist.png)
+
+![框中心散点图](docs/assets/charts/box_centers_scatter.png)
+
 ![框中心热力图](docs/assets/charts/box_centers_heatmap.png)
 
+![框宽高散点图](docs/assets/charts/box_wh_scatter.png)
+
+![类别×划分框热力图](docs/assets/charts/class_split_heatmap.png)
+
+![按方法分组的重复组](docs/assets/charts/dup_by_method.png)
+
+![按划分的移除文件](docs/assets/charts/removals_by_split.png)
+
+![按原因的移除文件](docs/assets/charts/removals_by_reason.png)
+
 ![每划分保留与隔离对比](docs/assets/charts/kept_vs_quarantined.png)
+
+![流水线流程图](docs/assets/pipeline.png)
+
+![两张近似图片：一张保留，一张隔离](docs/assets/illustrations/duplicates_concept.png)
+
+![TRAIN、VAL、TEST 文件夹与保护 TEST 集免于泄漏的护盾](docs/assets/illustrations/splits_protection.png)
 
 ## 阈值
 

@@ -147,13 +147,57 @@ split/lý do, vấn đề sức khỏe theo kiểm tra/mức độ, kept vs quar
 Biểu đồ nào không có dữ liệu sẽ được bỏ qua và ghi rõ lý do trong
 `report.json` (không vẽ biểu đồ rỗng giả).
 
-Ảnh mẫu (xem đủ 22 ảnh ở `docs/charts.md`):
+Toàn bộ ảnh mẫu từ dataset demo (22 biểu đồ, sơ đồ pipeline và ảnh minh họa — mô tả từng biểu đồ ở `docs/charts.md`):
 
 ![Số ảnh mỗi split](docs/assets/charts/split_sizes.png)
 
+![Tỉ lệ mỗi split](docs/assets/charts/split_share.png)
+
+![Số ảnh mỗi class](docs/assets/charts/class_images.png)
+
+![Số ảnh mỗi class xếp chồng theo split](docs/assets/charts/class_split_stacked.png)
+
+![Phân phối kích thước file](docs/assets/charts/file_size_hist.png)
+
+![Phân phối chiều rộng ảnh](docs/assets/charts/width_hist.png)
+
+![Phân phối chiều cao ảnh](docs/assets/charts/height_hist.png)
+
+![Phân phối tỉ lệ w/h](docs/assets/charts/aspect_hist.png)
+
+![Phân phối diện tích ảnh](docs/assets/charts/area_hist.png)
+
+![Số box mỗi ảnh](docs/assets/charts/instances_per_image.png)
+
+![Số box mỗi class](docs/assets/charts/boxes_per_class.png)
+
+![Phân phối chiều rộng box](docs/assets/charts/box_width_hist.png)
+
+![Phân phối chiều cao box](docs/assets/charts/box_height_hist.png)
+
+![Phân phối diện tích box](docs/assets/charts/box_area_hist.png)
+
+![Scatter tâm box](docs/assets/charts/box_centers_scatter.png)
+
 ![Heatmap tâm box](docs/assets/charts/box_centers_heatmap.png)
 
+![Scatter w vs h của box](docs/assets/charts/box_wh_scatter.png)
+
+![Heatmap box theo class × split](docs/assets/charts/class_split_heatmap.png)
+
+![Nhóm trùng theo phương pháp](docs/assets/charts/dup_by_method.png)
+
+![File bị loại theo split](docs/assets/charts/removals_by_split.png)
+
+![File bị loại theo lý do](docs/assets/charts/removals_by_reason.png)
+
 ![Kept vs quarantined mỗi split](docs/assets/charts/kept_vs_quarantined.png)
+
+![Sơ đồ luồng pipeline](docs/assets/pipeline.png)
+
+![Hai ảnh gần giống nhau: một ảnh được giữ, một ảnh vào quarantine](docs/assets/illustrations/duplicates_concept.png)
+
+![Ba thư mục TRAIN, VAL, TEST với lá chắn bảo vệ tập TEST khỏi rò rỉ](docs/assets/illustrations/splits_protection.png)
 
 ## Ngưỡng
 

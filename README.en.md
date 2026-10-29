@@ -148,13 +148,57 @@ and reason, health findings by check and severity, kept vs
 quarantined. Charts without data are skipped and listed with a
 reason in `report.json` (no fake empty plots).
 
-Sample charts (see all 22 in `docs/charts.md`):
+Full sample gallery from the demo dataset (22 charts, pipeline diagram and illustrations — see `docs/charts.md` for per-chart descriptions):
 
 ![Images per split](docs/assets/charts/split_sizes.png)
 
+![Split share](docs/assets/charts/split_share.png)
+
+![Images per class](docs/assets/charts/class_images.png)
+
+![Images per class stacked by split](docs/assets/charts/class_split_stacked.png)
+
+![File size distribution](docs/assets/charts/file_size_hist.png)
+
+![Image width distribution](docs/assets/charts/width_hist.png)
+
+![Image height distribution](docs/assets/charts/height_hist.png)
+
+![Aspect ratio distribution](docs/assets/charts/aspect_hist.png)
+
+![Image area distribution](docs/assets/charts/area_hist.png)
+
+![Boxes per image](docs/assets/charts/instances_per_image.png)
+
+![Boxes per class](docs/assets/charts/boxes_per_class.png)
+
+![Box width distribution](docs/assets/charts/box_width_hist.png)
+
+![Box height distribution](docs/assets/charts/box_height_hist.png)
+
+![Box area distribution](docs/assets/charts/box_area_hist.png)
+
+![Box center scatter](docs/assets/charts/box_centers_scatter.png)
+
 ![Box center heatmap](docs/assets/charts/box_centers_heatmap.png)
 
+![Box w vs h scatter](docs/assets/charts/box_wh_scatter.png)
+
+![Box class × split heatmap](docs/assets/charts/class_split_heatmap.png)
+
+![Duplicate groups by method](docs/assets/charts/dup_by_method.png)
+
+![Removals by split](docs/assets/charts/removals_by_split.png)
+
+![Removals by reason](docs/assets/charts/removals_by_reason.png)
+
 ![Kept vs quarantined per split](docs/assets/charts/kept_vs_quarantined.png)
+
+![Pipeline flow diagram](docs/assets/pipeline.png)
+
+![Two near-identical images: one kept, one quarantined](docs/assets/illustrations/duplicates_concept.png)
+
+![TRAIN, VAL, TEST folders with a shield protecting the TEST set from leakage](docs/assets/illustrations/splits_protection.png)
 
 ## Thresholds
 
