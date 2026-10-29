@@ -139,7 +139,7 @@ pip install vision-cleanse[charts]
 vision-cleanse /path/to/dataset --charts
 ```
 
-Xuất 24 biểu đồ PNG vào `<report-dir>/charts` (xem `docs/charts.md`):
+Xuất 25 biểu đồ PNG vào `<report-dir>/charts` (xem `docs/charts.md`):
 tổng quan split/class, phân phối kích thước file, chiều ảnh, tỉ lệ,
 diện tích; với nhãn YOLO: số box mỗi ảnh, box mỗi class, phân phối
 w/h/diện tích box, scatter và heatmap tâm box, heatmap class × split;
@@ -148,7 +148,7 @@ split/lý do, vấn đề sức khỏe theo kiểm tra/mức độ, kept vs quar
 Biểu đồ nào không có dữ liệu sẽ được bỏ qua và ghi rõ lý do trong
 `report.json` (không vẽ biểu đồ rỗng giả).
 
-Toàn bộ ảnh mẫu từ dataset demo (22 biểu đồ, sơ đồ pipeline và ảnh minh họa — mô tả từng biểu đồ ở `docs/charts.md`):
+Toàn bộ ảnh mẫu từ dataset demo (23 biểu đồ, sơ đồ pipeline và ảnh minh họa — mô tả từng biểu đồ ở `docs/charts.md`):
 
 ![Số ảnh mỗi split](docs/assets/charts/split_sizes.png)
 
@@ -187,6 +187,8 @@ Toàn bộ ảnh mẫu từ dataset demo (22 biểu đồ, sơ đồ pipeline v�
 ![Heatmap box theo class × split](docs/assets/charts/class_split_heatmap.png)
 
 ![Nhóm trùng theo phương pháp](docs/assets/charts/dup_by_method.png)
+
+![Venn nhóm trùng theo split](docs/assets/charts/duplicate_groups_venn.png)
 
 ![File bị loại theo split](docs/assets/charts/removals_by_split.png)
 

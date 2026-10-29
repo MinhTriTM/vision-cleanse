@@ -139,7 +139,7 @@ def clean(
         file is found under the scanned splits.
     charts_dir: if given, PNG charts are written there (see
         charts.py) and listed in ``report["charts"]``. Requires the
-        ``charts`` extra (matplotlib); otherwise a
+        ``charts`` extra (weasyprint + pdftoppm); otherwise a
         ``ChartsUnavailableError`` is raised.
     """
     root = Path(root)
@@ -167,6 +167,19 @@ def clean(
     groups = group_duplicates(usable, phash_threshold, dhash_threshold)
     # group_duplicates indexes into ``usable``; resolve against it.
     resolved = [resolve_group(i, g, usable) for i, g in enumerate(groups)]
+    # Full member list per group (kept + removed) for the Venn chart:
+    # kept entries are full records, removed entries are small dicts.
+    duplicate_groups_detail = [
+        {
+            "group_id": r["group_id"],
+            "method": r["method"],
+            "members": (
+                [{"path": str(k["path"]), "split": k["split"]} for k in r["kept"]]
+                + [{"path": x["path"], "split": x["split"]} for x in r["removed"]]
+            ),
+        }
+        for r in resolved
+    ]
     conflicts = [r["conflict"] for r in resolved if r["conflict"] is not None]
     removals = [x for r in resolved for x in r["removed"]]
     kept_paths = {str(r["kept"][0]["path"]) for r in resolved}
@@ -208,6 +221,7 @@ def clean(
         ],
         "removals": removals,
         "conflicts": conflicts,
+        "duplicate_groups_detail": duplicate_groups_detail,
         "kept_sample": sorted(kept_paths)[:10],
     }
 

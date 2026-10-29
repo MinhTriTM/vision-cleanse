@@ -55,7 +55,7 @@ Bản tiếng Anh và tiếng Trung của README nằm ở `README.en.md` và
 5. **Quarantine** — chuyển file bị loại kèm `manifest.json`, không
    bao giờ xóa thẳng.
 6. **Health** — 11 kiểm tra, kết luận `clean` khi mọi kiểm tra đạt.
-7. **Report + Charts** — `report.json` và 24 biểu đồ PNG.
+7. **Report + Charts** — `report.json` và 25 biểu đồ PNG.
 
 ## Minh họa
 

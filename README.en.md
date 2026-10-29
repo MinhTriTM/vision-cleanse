@@ -139,7 +139,7 @@ pip install vision-cleanse[charts]
 vision-cleanse /path/to/dataset --charts
 ```
 
-Exports 24 PNG charts to `<report-dir>/charts` (see `docs/charts.md`):
+Exports 25 PNG charts to `<report-dir>/charts` (see `docs/charts.md`):
 split/class overviews, file-size, width, height, aspect and area
 distributions; with YOLO labels: boxes per image/class, box w/h/area
 distributions, box-center scatter and heatmap, class × split heatmap;
@@ -148,7 +148,7 @@ and reason, health findings by check and severity, kept vs
 quarantined. Charts without data are skipped and listed with a
 reason in `report.json` (no fake empty plots).
 
-Full sample gallery from the demo dataset (22 charts, pipeline diagram and illustrations — see `docs/charts.md` for per-chart descriptions):
+Full sample gallery from the demo dataset (23 charts, pipeline diagram and illustrations — see `docs/charts.md` for per-chart descriptions):
 
 ![Images per split](docs/assets/charts/split_sizes.png)
 
@@ -187,6 +187,8 @@ Full sample gallery from the demo dataset (22 charts, pipeline diagram and illus
 ![Box class × split heatmap](docs/assets/charts/class_split_heatmap.png)
 
 ![Duplicate groups by method](docs/assets/charts/dup_by_method.png)
+
+![Duplicate groups Venn by split](docs/assets/charts/duplicate_groups_venn.png)
 
 ![Removals by split](docs/assets/charts/removals_by_split.png)
 

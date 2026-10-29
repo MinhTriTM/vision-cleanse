@@ -7,6 +7,33 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
 ## [Unreleased]
 
 ### Added
+- Biểu đồ Venn nhóm trùng `duplicate_groups_venn.png` (biểu đồ thứ
+  25): đếm mỗi nhóm trùng theo tập split mà members chạm tới (7
+  vùng train/val/test); màu vòng cố định RGB, opacity 0.55; skip kèm
+  lý do `"no duplicate groups"` khi không có nhóm trùng, vẫn vẽ đủ
+  3 vòng khi thiếu split.
+- Khóa mới `report["duplicate_groups_detail"]`: danh sách mỗi nhóm
+  trùng gồm `group_id`, `method` và `members` (kept + removed, mỗi
+  member có `path` và `split`) — nguồn dữ liệu cho biểu đồ Venn.
+
+### Changed
+- Toàn bộ 24 biểu đồ cũ được vẽ lại theo style Sáng hiện đại (thẻ
+  trắng bo 28px, indigo `#4f46e5` + cyan `#06b6d4`, title 54px,
+  subtitle 28px, số liệu 38px bold, font Noto Sans, trục đếm dùng
+  nice ticks nguyên) bằng engine HTML/CSS + SVG thuần, render qua
+  WeasyPrint rồi `pdftoppm -r 96` thành PNG 1600×900; tên file, cờ
+  CLI `--charts`/`--charts-dir` và cơ chế skip kèm reason giữ
+  nguyên. Extra `charts` đổi từ matplotlib sang `weasyprint>=70`
+  (cộng `pdftoppm` của poppler-utils); lõi vẫn chỉ cần Pillow +
+  numpy. Scatter và heatmap tâm box, heatmap class × split được
+  thiết kế mới theo cùng ngôn ngữ style (heatmap tâm box dùng lưới
+  10×10, thang màu rời rạc thay cho gradient SVG).
+- Gallery `docs/assets/charts/` tái tạo bằng engine mới (23 ảnh từ
+  dataset demo sạch — 2 ảnh health skip đúng hành vi; xem
+  `docs/charts.md`); sơ đồ pipeline cập nhật nhãn "25 PNGs".
+- Không bump version (vẫn 0.2.0).
+
+### Added
 - Cây dataset kỳ vọng train/val-only cho bố cục YOLO
   (`images/train/img1.jpg`, `images/train/img2.jpg`,
   `images/val/img3.jpg` + `labels/` tương ứng + `data.yaml` chỉ có

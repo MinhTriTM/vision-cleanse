@@ -114,14 +114,14 @@ pip install vision-cleanse[charts]
 vision-cleanse /path/to/dataset --charts
 ```
 
-导出 24 张 PNG 图表到 `<report-dir>/charts`（见 `docs/charts.md`）：
+导出 25 张 PNG 图表到 `<report-dir>/charts`（见 `docs/charts.md`）：
 划分/类别概览，文件大小、宽、高、长宽比、面积分布；有 YOLO 标签时：
 每图框数、每类框数、框宽/高/面积分布、框中心散点与热力图、类别 ×
 划分热力图；以及清洗结果：按方法分组的重复组、按划分/原因的移除数、
 按检查/严重程度的健康问题、保留与隔离对比。无数据的图表会被跳过并
 在 `report.json` 中注明原因（不画空图）。
 
-演示数据集的完整示例图库（22 张图表、流水线图与插图——每张图表的说明见 `docs/charts.md`）：
+演示数据集的完整示例图库（23 张图表、流水线图与插图——每张图表的说明见 `docs/charts.md`）：
 
 ![每划分图片数](docs/assets/charts/split_sizes.png)
 
@@ -160,6 +160,8 @@ vision-cleanse /path/to/dataset --charts
 ![类别×划分框热力图](docs/assets/charts/class_split_heatmap.png)
 
 ![按方法分组的重复组](docs/assets/charts/dup_by_method.png)
+
+![按划分重叠的重复组 Venn 图](docs/assets/charts/duplicate_groups_venn.png)
 
 ![按划分的移除文件](docs/assets/charts/removals_by_split.png)
 

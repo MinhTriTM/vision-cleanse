@@ -79,7 +79,7 @@ vision-cleanse ROOT [tùy chọn]
 | `--lang` | `vi` | Ngôn ngữ thông báo: `vi`, `en`, `zh` |
 | `--min-size` | `32` | Ảnh có cạnh dài nhất dưới ngưỡng này bị gắn cờ "tiny" |
 | `--yolo` | (tự động) | Ép bật kiểm tra annotation YOLO |
-| `--charts` | (không) | Xuất 24 biểu đồ PNG (xem [Biểu đồ](charts.md); cần `pip install vision-cleanse[charts]`) |
+| `--charts` | (không) | Xuất 25 biểu đồ PNG (xem [Biểu đồ](charts.md); cần `pip install vision-cleanse[charts]`) |
 | `--charts-dir` | `<report-dir>/charts` | Thư mục ghi biểu đồ |
 
 Một cặp ảnh được coi là trùng gần đúng khi pHash **hoặc** dHash nằm

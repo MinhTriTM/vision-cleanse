@@ -6,7 +6,8 @@ real chart output without running anything, and draws the pipeline
 flow diagram (docs/assets/pipeline.png).
 
 Run: PYTHONPATH=src python scripts/make_gallery.py
-Requires the charts extra (matplotlib).
+Requires the charts extra (weasyprint + pdftoppm); the pipeline
+diagram additionally needs matplotlib.
 """
 
 from __future__ import annotations
@@ -102,7 +103,7 @@ def _pipeline_diagram(out: Path) -> None:
         (5, 7, "4. Resolve\nKeep test > val > train · deterministic keeper"),
         (5, 5, "5. Quarantine\nMove + manifest.json (never hard-delete)"),
         (5, 3, "6. Health checks\n11 checks · clean verdict"),
-        (5, 1, "7. Report + Charts\nreport.json · conflict_report.csv · 24 PNGs"),
+        (5, 1, "7. Report + Charts\nreport.json · conflict_report.csv · 25 PNGs"),
     ]
     for cx, cy, text in boxes:
         ax.add_patch(FancyBboxPatch((cx - 3.4, cy - 0.7), 6.8, 1.4,
