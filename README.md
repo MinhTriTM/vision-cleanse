@@ -1,4 +1,6 @@
-# VisionCleanse (MVP)
+# VisionCleanse
+
+Phiên bản hiện tại: **0.2.0**.
 
 Làm sạch dataset Computer Vision: phát hiện trùng lặp và ngăn rò rỉ
 dữ liệu giữa Train / Val / Test.
@@ -21,6 +23,24 @@ dữ liệu giữa Train / Val / Test.
 - **Đồng bộ annotation:** file nhãn YOLO `.txt` nằm cạnh ảnh được
   chuyển cùng ảnh vào quarantine. File COCO JSON (nếu truyền `--coco`)
   được xuất bản đã lọc, file gốc không bao giờ bị ghi đè.
+- **Kiểm tra sức khỏe dataset (0.2.0):** ngoài trùng lặp, còn kiểm
+  tra file rỗng 0 byte, file hỏng, ảnh trơn/đơn sắc, ảnh quá nhỏ,
+  file lạ trong thư mục split, ảnh thiếu nhãn YOLO, nhãn YOLO mồ
+  côi/sai định dạng/rỗng, trùng tên file khác nội dung, và trùng
+  lặp trong nội bộ tập test. Kiểm tra YOLO tự bật khi thấy file
+  `.txt` (hoặc ép bằng `--yolo`).
+- **Ba ngôn ngữ (0.2.0):** thông báo CLI và tên các kiểm tra có
+  tiếng Việt, tiếng Anh và tiếng Trung qua `--lang vi|en|zh`
+  (mặc định `vi`). Key trong `report.json` luôn giữ tiếng Anh để
+  máy đọc được.
+
+## Kết luận "dataset sạch" nghĩa là gì
+
+Khi báo cáo ghi `"clean": true`, nghĩa là **mọi kiểm tra đã bật đều
+đạt** (không lỗi, không cảnh báo). Đây không phải cam kết tuyệt đối:
+trùng gần đúng vốn là bài toán mờ và không công cụ nào bắt được lỗi
+nhãn về mặt ngữ nghĩa. Báo cáo liệt kê đầy đủ từng kiểm tra đã chạy
+nên kết luận này kiểm chứng được.
 
 ## Cài đặt
 
@@ -45,6 +65,9 @@ vision-cleanse /path/to/dataset
 
 # Chạy thật: chuyển file trùng vào quarantine
 vision-cleanse /path/to/dataset --apply
+
+# Thông báo tiếng Anh, kiểm tra YOLO luôn bật
+vision-cleanse /path/to/dataset --apply --lang en --yolo
 
 # Kèm đồng bộ COCO
 vision-cleanse /path/to/dataset --apply --coco /path/to/annotations.json

@@ -21,6 +21,8 @@ from pathlib import Path
 
 from . import utils
 from .extractors import dhash, file_hash, image_size, phash
+from .health import run_health_checks
+from .i18n import normalize_lang
 from .matchers import group_duplicates
 
 # Lower rank = higher priority (kept first).
@@ -95,6 +97,9 @@ def clean(
     report_dir: str | Path | None = None,
     coco_path: str | Path | None = None,
     coco_output: str | Path | None = None,
+    lang: str = "vi",
+    min_size: int = 32,
+    yolo: bool | None = None,
 ) -> dict:
     """Run the MVP pipeline over ``root`` and return a report dict.
 
@@ -115,6 +120,13 @@ def clean(
         The original is never overwritten; the cleaned copy goes to
         ``coco_output`` (default ``<coco_path>.cleaned.json``).
         In dry-run mode the sync is only counted, not written.
+    lang: message language for the CLI summary (``vi`` / ``en`` /
+        ``zh``). Report JSON keys always stay in English.
+    min_size: images whose longest side is below this are flagged
+        as ``tiny`` by the health checks (default 32 px).
+    yolo: force YOLO annotation checks on (True) or off (False).
+        Default (None) auto-enables them when any ``.txt`` label
+        file is found under the scanned splits.
     """
     root = Path(root)
     records, missing = utils.discover(root, list(splits))
@@ -144,10 +156,17 @@ def clean(
     conflicts = [r["conflict"] for r in resolved if r["conflict"] is not None]
     removals = [x for r in resolved for x in r["removed"]]
     kept_paths = {str(r["kept"][0]["path"]) for r in resolved}
+    scanned_splits = [s for s in splits if s not in missing]
+    health = run_health_checks(
+        root, records, resolved, scanned_splits, min_size=min_size, yolo=yolo
+    )
 
     report: dict = {
         "root": str(root),
-        "splits_scanned": [s for s in splits if s not in missing],
+        "lang": normalize_lang(lang),
+        "clean": health["clean"],
+        "health": health,
+        "splits_scanned": scanned_splits,
         "splits_missing": missing,
         "images_found": len(records),
         "images_unreadable": unreadable,

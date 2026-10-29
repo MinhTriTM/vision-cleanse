@@ -6,6 +6,7 @@ YOLO/COCO annotation sync. Deep-feature rings arrive later.
 """
 
 from .core import clean
+from .i18n import t
 
-__version__ = "0.1.0"
-__all__ = ["clean", "__version__"]
+__version__ = "0.2.0"
+__all__ = ["clean", "t", "__version__"]
