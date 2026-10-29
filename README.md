@@ -103,6 +103,40 @@ report = clean("/path/to/dataset", dry_run=False,
                quarantine_dir="/path/to/quarantine")
 ```
 
+## Bố cục dataset hỗ trợ
+
+Hai bố cục được tự nhận diện:
+
+- **Classic:** `train/<class>/a.jpg` (hoặc `train/a.jpg`), nhãn YOLO
+  `.txt` nằm cạnh ảnh.
+- **YOLO:** `images/train/a.jpg` + `labels/train/a.txt` + `data.yaml`
+  (tên class lấy từ `names` trong `data.yaml`). Khi quét ở chế độ
+  này, file nhãn được chuyển vào quarantine giữ nguyên cây `labels/`.
+
+## Biểu đồ
+
+```bash
+pip install vision-cleanse[charts]
+vision-cleanse /path/to/dataset --charts
+```
+
+Xuất 24 biểu đồ PNG vào `<report-dir>/charts` (xem `docs/charts.md`):
+tổng quan split/class, phân phối kích thước file, chiều ảnh, tỉ lệ,
+diện tích; với nhãn YOLO: số box mỗi ảnh, box mỗi class, phân phối
+w/h/diện tích box, scatter và heatmap tâm box, heatmap class × split;
+và kết quả làm sạch: nhóm trùng theo phương pháp, file loại theo
+split/lý do, vấn đề sức khỏe theo kiểm tra/mức độ, kept vs quarantined.
+Biểu đồ nào không có dữ liệu sẽ được bỏ qua và ghi rõ lý do trong
+`report.json` (không vẽ biểu đồ rỗng giả).
+
+Ảnh mẫu (xem đủ 22 ảnh ở `docs/charts.md`):
+
+![Số ảnh mỗi split](docs/assets/charts/split_sizes.png)
+
+![Heatmap tâm box](docs/assets/charts/box_centers_heatmap.png)
+
+![Kept vs quarantined mỗi split](docs/assets/charts/kept_vs_quarantined.png)
+
 ## Ngưỡng
 
 Một cặp ảnh được coi là trùng gần đúng khi pHash **hoặc** dHash nằm

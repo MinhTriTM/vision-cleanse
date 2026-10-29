@@ -14,6 +14,7 @@ nav:
   - API: api.md
   - Kiểm tra sức khỏe: health.md
   - Benchmark: benchmark.md
+  - Biểu đồ: charts.md
   - Phát hành: publishing.md
 
 markdown_extensions:

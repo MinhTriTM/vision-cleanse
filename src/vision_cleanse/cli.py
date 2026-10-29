@@ -43,27 +43,44 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Images with longest side below this are flagged tiny (default 32)")
     p.add_argument("--yolo", action="store_true",
                    help="Force YOLO annotation checks on (default: auto-detect .txt labels)")
+    p.add_argument("--charts", action="store_true",
+                   help="Export PNG charts (overview, boxes, cleaning) next to the report "
+                        "(requires: pip install vision-cleanse[charts])")
+    p.add_argument("--charts-dir", default=None,
+                   help="Charts directory (default: <report-dir>/charts)")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     lang = normalize_lang(args.lang)
-    report = clean(
-        root=args.root,
-        splits=tuple(args.splits),
-        phash_threshold=args.phash_threshold,
-        dhash_threshold=args.dhash_threshold,
-        hash_algo=args.hash_algo,
-        dry_run=not args.apply,
-        quarantine_dir=args.quarantine_dir,
-        report_dir=args.report_dir,
-        coco_path=args.coco,
-        coco_output=args.coco_output,
-        lang=lang,
-        min_size=args.min_size,
-        yolo=True if args.yolo else None,
-    )
+    charts_dir = args.charts_dir
+    if args.charts and charts_dir is None:
+        charts_dir = f"{args.report_dir}/charts"
+    try:
+        report = clean(
+            root=args.root,
+            splits=tuple(args.splits),
+            phash_threshold=args.phash_threshold,
+            dhash_threshold=args.dhash_threshold,
+            hash_algo=args.hash_algo,
+            dry_run=not args.apply,
+            quarantine_dir=args.quarantine_dir,
+            report_dir=args.report_dir,
+            coco_path=args.coco,
+            coco_output=args.coco_output,
+            lang=lang,
+            min_size=args.min_size,
+            yolo=True if args.yolo else None,
+            charts_dir=charts_dir,
+        )
+    except Exception as exc:
+        from .charts import ChartsUnavailableError
+
+        if isinstance(exc, ChartsUnavailableError):
+            print(f"Error: {exc}", file=sys.stderr)
+            return 2
+        raise
     print(f"[{t('mode_apply' if args.apply else 'mode_dry', lang)}]")
     print(t("scanned", lang, n=report["images_found"])
           + f" (splits: {', '.join(report['splits_scanned']) or 'none'})")
@@ -76,6 +93,10 @@ def main(argv: list[str] | None = None) -> int:
     print(t("to_quarantine", lang, n=report["to_quarantine"])
           + " | " + t("conflicts", lang, n=report["label_conflicts"]))
     print(t("report", lang, p=f"{args.report_dir}/report.json"))
+    if "charts" in report:
+        ch = report["charts"]
+        print(t("charts_done", lang, n=len(ch["generated"]), p=ch["dir"])
+              + (f" ({len(ch['skipped'])} skipped)" if ch["skipped"] else ""))
     if report["label_conflicts"]:
         print(t("conflicts_file", lang, p=f"{args.report_dir}/conflict_report.csv"))
     if "quarantine_dir" in report:

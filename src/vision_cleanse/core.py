@@ -47,8 +47,12 @@ def resolve_group(group_id: int, group: dict, records: list[dict]) -> dict:
     a conflict-report row (or ``None``).
     """
     members = [records[i] for i in group["members"]]
-    labels = {m["label"] for m in members if m["label"]}
-    if len(labels) > 1:
+    # Conflict = same (near-)duplicate content annotated differently.
+    # ``classes`` is the folder label in classic mode, or the sorted
+    # class-id tuple from the YOLO .txt file in YOLO mode. Members
+    # without any class never create a conflict on their own.
+    class_sets = {m["classes"] for m in members if m.get("classes")}
+    if len(class_sets) > 1:
         return {
             "group_id": group_id,
             "method": group["method"],
@@ -57,7 +61,7 @@ def resolve_group(group_id: int, group: dict, records: list[dict]) -> dict:
             "conflict": {
                 "group_id": group_id,
                 "method": group["method"],
-                "labels": sorted(labels),
+                "labels": sorted({m["label"] for m in members if m["label"]}),
                 "splits": sorted({m["split"] for m in members}),
                 "files": [str(m["path"]) for m in members],
             },
@@ -73,6 +77,7 @@ def resolve_group(group_id: int, group: dict, records: list[dict]) -> dict:
                 "path": str(m["path"]),
                 "split": m["split"],
                 "label": m["label"],
+                "label_path": str(m["label_path"]) if m.get("label_path") else None,
                 "kept_path": str(kept["path"]),
                 "reason": (
                     "duplicate_in_lower_priority_split"
@@ -100,12 +105,17 @@ def clean(
     lang: str = "vi",
     min_size: int = 32,
     yolo: bool | None = None,
+    charts_dir: str | Path | None = None,
 ) -> dict:
     """Run the MVP pipeline over ``root`` and return a report dict.
 
     Parameters
     ----------
-    root: dataset root containing ``<split>/`` subdirectories.
+    root: dataset root. Two layouts are supported (auto-detected):
+        classic ``<split>/[<class>/]<image>`` with ``.txt`` labels
+        next to the images, or YOLO ``images/<split>/`` +
+        ``labels/<split>/`` + optional ``data.yaml`` (class names
+        come from ``names`` when present).
     splits: split names to scan (missing ones are skipped).
     phash_threshold, dhash_threshold: max Hamming distance for a
         near-duplicate pair (either hash within threshold groups
@@ -127,9 +137,13 @@ def clean(
     yolo: force YOLO annotation checks on (True) or off (False).
         Default (None) auto-enables them when any ``.txt`` label
         file is found under the scanned splits.
+    charts_dir: if given, PNG charts are written there (see
+        charts.py) and listed in ``report["charts"]``. Requires the
+        ``charts`` extra (matplotlib); otherwise a
+        ``ChartsUnavailableError`` is raised.
     """
     root = Path(root)
-    records, missing = utils.discover(root, list(splits))
+    records, missing, layout = utils.discover(root, list(splits))
 
     # --- Feature extraction (rings 1 + 2) ---
     unreadable: list[str] = []
@@ -158,12 +172,18 @@ def clean(
     kept_paths = {str(r["kept"][0]["path"]) for r in resolved}
     scanned_splits = [s for s in splits if s not in missing]
     health = run_health_checks(
-        root, records, resolved, scanned_splits, min_size=min_size, yolo=yolo
+        root, records, resolved, scanned_splits, min_size=min_size, yolo=yolo,
+        layout=layout,
     )
 
     report: dict = {
         "root": str(root),
         "lang": normalize_lang(lang),
+        "layout": {
+            "mode": layout["mode"],
+            "data_yaml": layout["data_yaml"],
+            "names": layout["names"],
+        },
         "clean": health["clean"],
         "health": health,
         "splits_scanned": scanned_splits,
@@ -191,6 +211,12 @@ def clean(
         "kept_sample": sorted(kept_paths)[:10],
     }
 
+    # --- Charts (before reports are written, so report.json lists them) ---
+    if charts_dir is not None:
+        from .charts import generate_charts
+
+        report["charts"] = generate_charts(report, records, charts_dir)
+
     # --- Side effects (apply mode only, except reports) ---
     if report_dir is not None:
         utils.write_json_report(report_dir, report)
@@ -209,7 +235,9 @@ def clean(
         qdir = Path(quarantine_dir) if quarantine_dir else Path(str(root) + "_quarantine")
         manifest = []
         for r in removals:
-            entry = utils.move_to_quarantine(r["path"], root, qdir)
+            entry = utils.move_to_quarantine(
+                r["path"], root, qdir, label_path=r.get("label_path")
+            )
             entry.update({"reason": r["reason"], "kept_path": r["kept_path"]})
             manifest.append(entry)
         report["quarantine_dir"] = str(qdir)

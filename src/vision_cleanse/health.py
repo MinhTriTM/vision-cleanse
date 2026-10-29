@@ -33,7 +33,25 @@ def _size(path: Path) -> int:
         return -1
 
 
-def _iter_split_files(root: Path, splits: list[str]):
+def _iter_split_files(root: Path, splits: list[str], layout: dict | None = None):
+    """Yield ``(split, file)`` for every file under the scanned splits.
+
+    In YOLO layout this covers both the images tree and the labels
+    tree; in classic layout it covers ``root/<split>/``.
+    """
+    if layout is not None and layout["mode"] == "yolo":
+        for split in splits:
+            idir = layout["image_dirs"].get(split)
+            if idir is not None and idir.is_dir():
+                for p in sorted(idir.rglob("*")):
+                    if p.is_file():
+                        yield split, p
+            ldir = layout["label_dirs"].get(split)
+            if ldir is not None and ldir.is_dir():
+                for p in sorted(ldir.rglob("*")):
+                    if p.is_file():
+                        yield split, p
+        return
     for split in splits:
         split_dir = root / split
         if not split_dir.is_dir():
@@ -50,6 +68,7 @@ def run_health_checks(
     splits: list[str],
     min_size: int = 32,
     yolo: bool | None = None,
+    layout: dict | None = None,
 ) -> dict:
     """Run all health checks. ``records`` are discover() dicts, some
     carrying extracted features (usable ones have ``md5``);
@@ -84,31 +103,31 @@ def run_health_checks(
         w, h = rec.get("width", 0), rec.get("height", 0)
         if w and h and max(w, h) < min_size:
             add("tiny", "warning", p, f"{w}x{h} < {min_size}px")
-    for split, p in _iter_split_files(root, splits):
+    for split, p in _iter_split_files(root, splits, layout):
         if p.suffix.lower() not in IMAGE_EXTENSIONS and p.suffix.lower() != ".txt":
             add("other_file", "info", p, f"split={split}")
 
     # --- YOLO annotation consistency (auto-enabled if any .txt found) ---
     label_files: list[Path] = []
-    for split, p in _iter_split_files(root, splits):
+    for split, p in _iter_split_files(root, splits, layout):
         if p.suffix.lower() == ".txt":
             label_files.append(p)
     if yolo is None:
         yolo = len(label_files) > 0
     if yolo:
-        image_stems: dict[Path, set[str]] = {}
+        # Pair by exact expected label path: alongside the image in
+        # classic mode, in the labels tree in YOLO mode.
+        expected: dict[Path, dict] = {}
         for rec in records:
-            p = Path(rec["path"])
-            image_stems.setdefault(p.parent, set()).add(p.stem)
-        label_stems: dict[Path, set[str]] = {}
-        for lf in label_files:
-            label_stems.setdefault(lf.parent, set()).add(lf.stem)
+            lp = rec.get("label_path")
+            if lp is not None:
+                expected[Path(lp)] = rec
         for rec in records:
-            p = Path(rec["path"])
-            if p.stem not in label_stems.get(p.parent, set()):
-                add("missing_label", "warning", p)
+            lp = rec.get("label_path")
+            if lp is None or not Path(lp).is_file():
+                add("missing_label", "warning", rec["path"])
         for lf in label_files:
-            if lf.stem not in image_stems.get(lf.parent, set()):
+            if lf not in expected:
                 add("orphan_label", "warning", lf)
                 continue
             try:

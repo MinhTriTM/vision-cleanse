@@ -19,6 +19,7 @@ clean(
     lang="vi",                # "vi" | "en" | "zh"
     min_size=32,
     yolo=None,                # None = tự bật khi thấy file .txt
+    charts_dir=None,          # nếu có: xuất biểu đồ PNG (cần extra charts)
 ) -> dict
 ```
 

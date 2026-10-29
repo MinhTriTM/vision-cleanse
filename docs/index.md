@@ -40,3 +40,18 @@ vision-cleanse /path/to/dataset --apply --lang en --yolo
 Xem thêm ở [Hướng dẫn sử dụng](usage.md) và [API](api.md).
 Bản tiếng Anh và tiếng Trung của README nằm ở `README.en.md` và
 `README.zh.md` trong repo.
+
+## Luồng hoạt động
+
+![Sơ đồ luồng pipeline VisionCleanse](assets/pipeline.png)
+
+1. **Discover** — nhận diện bố cục classic hoặc YOLO
+   (`images/`, `labels/`, `data.yaml`).
+2. **Extract** — băm exact (MD5/SHA-256) và hash cảm nhận (pHash, dHash).
+3. **Group** — gom nhóm exact + near-dup theo luật OR, ngưỡng 10.
+4. **Resolve** — giữ `test > val > train`, giữ ảnh tất định; nhóm
+   xung đột nhãn được giữ nguyên và ghi `conflict_report.csv`.
+5. **Quarantine** — chuyển file bị loại kèm `manifest.json`, không
+   bao giờ xóa thẳng.
+6. **Health** — 11 kiểm tra, kết luận `clean` khi mọi kiểm tra đạt.
+7. **Report + Charts** — `report.json` và 24 biểu đồ PNG.

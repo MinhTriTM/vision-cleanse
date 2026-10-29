@@ -15,6 +15,31 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
   (500 ảnh) và kết quả chạy đầu tiên.
 - Badge CI / Python / License trên README.
 
+## [Unreleased] — Bố cục YOLO + biểu đồ
+
+### Added
+- Hỗ trợ bố cục YOLO chuẩn: `images/<split>/` + `labels/<split>/` +
+  `data.yaml` (tên class từ `names`); tự nhận diện cùng bố cục classic
+  cũ. Quarantine giữ nguyên cây `labels/`; xung đột nhãn so theo tập
+  class-id trong file `.txt`.
+- Xuất 24 biểu đồ PNG kiểu YOLO (`--charts`, xem `docs/charts.md`):
+  tổng quan split/class, phân phối kích thước/chiều/tỉ lệ/diện tích,
+  box YOLO (số box, w/h/diện tích, scatter và heatmap tâm box,
+  heatmap class × split), kết quả làm sạch (nhóm trùng, removals,
+  health, kept vs quarantined). Biểu đồ không có dữ liệu được bỏ qua
+  và ghi lý do, không vẽ biểu đồ rỗng giả.
+- Extra `charts` (matplotlib) — lõi vẫn chỉ cần Pillow + numpy; thiếu
+  extra mà bật `--charts` thì CLI báo lỗi rõ và thoát mã 2.
+- `clean(..., charts_dir=...)` và `report["layout"]` (mode/data.yaml/names).
+- Gallery ảnh mẫu: `docs/assets/charts/` (22 biểu đồ thật từ dataset
+  YOLO demo, tạo lại bằng `scripts/make_gallery.py`) + sơ đồ luồng
+  pipeline `docs/assets/pipeline.png`, nhúng vào `docs/charts.md`,
+  `docs/index.md` và README 3 ngôn ngữ.
+
+### Changed
+- `utils.discover()` nay trả về 3 giá trị `(records, missing, layout)`
+  thay vì 2; mỗi record thêm `classes` và `label_path`.
+
 ## [0.2.0] - 2026-10-29
 
 ### Added

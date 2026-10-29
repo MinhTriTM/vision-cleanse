@@ -79,6 +79,38 @@ report = clean("/path/to/dataset", dry_run=False,
                quarantine_dir="/path/to/quarantine")
 ```
 
+## 支持的数据集结构
+
+自动识别两种结构：
+
+- **Classic：**`train/<class>/a.jpg`（或 `train/a.jpg`），YOLO `.txt`
+  标签与图片同目录。
+- **YOLO：**`images/train/a.jpg` + `labels/train/a.txt` + `data.yaml`
+  （类别名来自 `data.yaml` 的 `names`）。此模式下标签文件按
+  `labels/` 树结构进入隔离区。
+
+## 图表
+
+```bash
+pip install vision-cleanse[charts]
+vision-cleanse /path/to/dataset --charts
+```
+
+导出 24 张 PNG 图表到 `<report-dir>/charts`（见 `docs/charts.md`）：
+划分/类别概览，文件大小、宽、高、长宽比、面积分布；有 YOLO 标签时：
+每图框数、每类框数、框宽/高/面积分布、框中心散点与热力图、类别 ×
+划分热力图；以及清洗结果：按方法分组的重复组、按划分/原因的移除数、
+按检查/严重程度的健康问题、保留与隔离对比。无数据的图表会被跳过并
+在 `report.json` 中注明原因（不画空图）。
+
+示例图表（22 张全图见 `docs/charts.md`）：
+
+![每划分图片数](docs/assets/charts/split_sizes.png)
+
+![框中心热力图](docs/assets/charts/box_centers_heatmap.png)
+
+![每划分保留与隔离对比](docs/assets/charts/kept_vs_quarantined.png)
+
 ## 阈值
 
 当 pHash **或** dHash 的汉明距离在阈值内（默认 64 位哈希取 10）时，一对图片即被视为近似重复。两种哈希互补：dHash 读取水平梯度符号，在 JPEG 噪声下非常稳定（实测即使 JPEG 质量为 30 时距离仍为 0，包括 pHash 会漂移至 16 的平滑图片）；pHash 读取全局低频结构，能发现 dHash 看不见的变化（dHash 只比较左右相邻像素）。OR 规则偏向召回；由于文件只是被隔离并附报告，永不静默删除，用户仍可复核。请在自己的数据上实测后再用

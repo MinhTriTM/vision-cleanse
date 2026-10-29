@@ -2,6 +2,10 @@
 
 ## Cấu trúc dataset
 
+Hai bố cục được tự nhận diện:
+
+**Classic:**
+
 ```
 dataset/
   train/<class>/a.jpg   # hoặc train/a.jpg (không chia class)
@@ -9,9 +13,30 @@ dataset/
   test/<class>/c.jpg
 ```
 
-Mỗi split là một thư mục con của root. Split không tồn tại sẽ được bỏ
-qua kèm cảnh báo. Nhãn (label) là tên thư mục class chứa ảnh; ảnh nằm
-trực tiếp dưới split thì nhãn rỗng và không gây xung đột nhãn.
+Nhãn YOLO `.txt` nằm cạnh ảnh. Nhãn (label) là tên thư mục class
+chứa ảnh; ảnh nằm trực tiếp dưới split thì nhãn rỗng và không gây
+xung đột nhãn.
+
+**YOLO (chuẩn Ultralytics):**
+
+```
+dataset_root/
+  images/
+    train/img1.jpg
+    val/img3.jpg
+  labels/
+    train/img1.txt
+    val/img3.txt
+  data.yaml
+```
+
+Tên class lấy từ `names` trong `data.yaml` (hỗ trợ cả dạng danh sách
+gạch đầu dòng và dạng inline `[cat, dog]`; `train`/`val`/`test`
+trong `data.yaml` nếu trỏ tới thư mục có sẵn cũng được dùng làm thư
+mục ảnh). Khi quarantine, file nhãn được giữ nguyên cây `labels/`.
+
+Mỗi split là một thư mục con. Split không tồn tại sẽ được bỏ qua
+kèm cảnh báo.
 
 ## Lệnh CLI
 
@@ -33,6 +58,8 @@ vision-cleanse ROOT [tùy chọn]
 | `--lang` | `vi` | Ngôn ngữ thông báo: `vi`, `en`, `zh` |
 | `--min-size` | `32` | Ảnh có cạnh dài nhất dưới ngưỡng này bị gắn cờ "tiny" |
 | `--yolo` | (tự động) | Ép bật kiểm tra annotation YOLO |
+| `--charts` | (không) | Xuất 24 biểu đồ PNG (xem [Biểu đồ](charts.md); cần `pip install vision-cleanse[charts]`) |
+| `--charts-dir` | `<report-dir>/charts` | Thư mục ghi biểu đồ |
 
 Một cặp ảnh được coi là trùng gần đúng khi pHash **hoặc** dHash nằm
 trong ngưỡng (luật OR — xem [README](https://github.com/MinhTriTM/vision-cleanse)

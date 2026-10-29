@@ -27,6 +27,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = []
 docs = ["mkdocs>=1.6", "mkdocs-material>=9"]
+charts = ["matplotlib>=3.7"]
 
 [tool.ruff]
 target-version = "py310"

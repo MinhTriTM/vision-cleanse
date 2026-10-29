@@ -103,6 +103,40 @@ report = clean("/path/to/dataset", dry_run=False,
                quarantine_dir="/path/to/quarantine")
 ```
 
+## Supported layouts
+
+Two layouts are auto-detected:
+
+- **Classic:** `train/<class>/a.jpg` (or `train/a.jpg`), YOLO `.txt`
+  labels next to the images.
+- **YOLO:** `images/train/a.jpg` + `labels/train/a.txt` + `data.yaml`
+  (class names from `names` in `data.yaml`). In this mode, label
+  files are quarantined under their own `labels/` tree.
+
+## Charts
+
+```bash
+pip install vision-cleanse[charts]
+vision-cleanse /path/to/dataset --charts
+```
+
+Exports 24 PNG charts to `<report-dir>/charts` (see `docs/charts.md`):
+split/class overviews, file-size, width, height, aspect and area
+distributions; with YOLO labels: boxes per image/class, box w/h/area
+distributions, box-center scatter and heatmap, class × split heatmap;
+and cleaning results: duplicate groups by method, removals by split
+and reason, health findings by check and severity, kept vs
+quarantined. Charts without data are skipped and listed with a
+reason in `report.json` (no fake empty plots).
+
+Sample charts (see all 22 in `docs/charts.md`):
+
+![Images per split](docs/assets/charts/split_sizes.png)
+
+![Box center heatmap](docs/assets/charts/box_centers_heatmap.png)
+
+![Kept vs quarantined per split](docs/assets/charts/kept_vs_quarantined.png)
+
 ## Thresholds
 
 A pair counts as a near-duplicate when pHash **or** dHash is within
