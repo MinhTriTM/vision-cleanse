@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from helpers import gradient
+
 from vision_cleanse import clean
 from vision_cleanse.cli import main as cli_main
 

@@ -1,0 +1,23 @@
+site_name: VisionCleanse
+site_description: Làm sạch dataset Computer Vision — phát hiện trùng lặp, ngăn rò rỉ Train/Val/Test.
+repo_url: https://github.com/MinhTriTM/vision-cleanse
+repo_name: MinhTriTM/vision-cleanse
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+
+nav:
+  - Trang chủ: index.md
+  - Hướng dẫn sử dụng: usage.md
+  - API: api.md
+  - Kiểm tra sức khỏe: health.md
+  - Benchmark: benchmark.md
+  - Phát hành: publishing.md
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code

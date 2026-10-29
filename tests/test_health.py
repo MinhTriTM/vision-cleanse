@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from helpers import checkerboard, circle, gradient
 from PIL import Image
 
-from helpers import checkerboard, circle, gradient
 from vision_cleanse import clean
 
 

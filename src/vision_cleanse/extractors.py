@@ -12,6 +12,7 @@ zero heavy dependencies.
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -66,7 +67,17 @@ def dhash(path: str | Path, hash_size: int = 8) -> int:
 
 
 def _dct_matrix(n: int) -> np.ndarray:
-    """Orthogonal DCT-II matrix of size ``n`` (direct cos formula)."""
+    """Orthogonal DCT-II matrix of size ``n`` (direct cos formula).
+
+    Cached: the same matrix is reused for every image, which matters
+    when hashing thousands of files (benchmarks, large datasets).
+    The matrix is never mutated by callers.
+    """
+    return _dct_matrix_cached(n)
+
+
+@lru_cache(maxsize=8)
+def _dct_matrix_cached(n: int) -> np.ndarray:
     m = np.empty((n, n), dtype=np.float64)
     for k in range(n):
         for i in range(n):

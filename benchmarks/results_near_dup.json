@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-29",
+  "version": "0.2.0",
+  "n_bases": 100,
+  "n_images": 500,
+  "phash_threshold": 10,
+  "dhash_threshold": 10,
+  "groups_found": 99,
+  "tp": 1000,
+  "fp": 25,
+  "fn": 0,
+  "precision": 0.9756,
+  "recall": 1.0,
+  "f1": 0.9877,
+  "per_transform_recall": {
+    "small": {
+      "n": 100,
+      "hit": 100,
+      "recall": 1.0
+    },
+    "large": {
+      "n": 100,
+      "hit": 100,
+      "recall": 1.0
+    },
+    "jpg30": {
+      "n": 100,
+      "hit": 100,
+      "recall": 1.0
+    },
+    "jpg95": {
+      "n": 100,
+      "hit": 100,
+      "recall": 1.0
+    }
+  },
+  "timing_s": {
+    "extract": 4.31,
+    "group": 0.06,
+    "total": 4.38
+  }
+}

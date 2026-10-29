@@ -1,5 +1,9 @@
 # VisionCleanse
 
+[![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Phiên bản hiện tại: **0.2.0**.
 
 Làm sạch dataset Computer Vision: phát hiện trùng lặp và ngăn rò rỉ

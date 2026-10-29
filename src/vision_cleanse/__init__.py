@@ -9,4 +9,4 @@ from .core import clean
 from .i18n import t
 
 __version__ = "0.2.0"
-__all__ = ["clean", "t", "__version__"]
+__all__ = ["__version__", "clean", "t"]

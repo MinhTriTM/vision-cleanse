@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from helpers import checkerboard, circle, gradient, noise, photo_like
+
 from vision_cleanse.extractors import dhash, file_hash, phash
 from vision_cleanse.matchers import group_duplicates, hamming
 

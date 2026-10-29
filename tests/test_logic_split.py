@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from helpers import checkerboard, gradient
+
 from vision_cleanse import clean
 
 

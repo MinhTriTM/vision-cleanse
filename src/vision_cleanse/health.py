@@ -77,8 +77,8 @@ def run_health_checks(
         try:
             with Image.open(p) as im:
                 gray = np.asarray(im.convert("L"), dtype=np.float64)
-        except Exception:
-            continue  # already reported as corrupt upstream
+        except Exception:  # noqa: BLE001, S112 - already reported as corrupt upstream
+            continue
         if float(gray.std()) < 1.0:
             add("blank", "warning", p, "std<1.0 (solid color)")
         w, h = rec.get("width", 0), rec.get("height", 0)
@@ -137,7 +137,7 @@ def run_health_checks(
     by_name: dict[str, list[dict]] = {}
     for rec in usable:
         by_name.setdefault(Path(rec["path"]).name, []).append(rec)
-    for name, group in by_name.items():
+    for group in by_name.values():
         if len(group) > 1 and len({r["md5"] for r in group}) > 1:
             add(
                 "dup_basename",

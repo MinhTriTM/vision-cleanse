@@ -143,7 +143,7 @@ def clean(
             ph, dh = phash(p), dhash(p)
             w, h = image_size(p)
             size = p.stat().st_size
-        except Exception as exc:  # corrupt / truncated / not an image
+        except Exception as exc:  # noqa: BLE001 - any unreadable file is corrupt input, not a bug
             unreadable.append(f"{p}: {exc}")
             continue
         rec.update({"md5": md5, "phash": ph, "dhash": dh,

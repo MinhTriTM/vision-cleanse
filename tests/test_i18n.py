@@ -8,6 +8,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from helpers import gradient
+
 from vision_cleanse import clean, t
 from vision_cleanse.cli import main as cli_main
 from vision_cleanse.i18n import normalize_lang

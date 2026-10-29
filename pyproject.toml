@@ -26,6 +26,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = []
+docs = ["mkdocs>=1.6", "mkdocs-material>=9"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.coverage.run]
+source = ["src"]
 
 [project.scripts]
 vision-cleanse = "vision_cleanse.cli:main"

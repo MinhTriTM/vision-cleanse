@@ -29,7 +29,7 @@ try:
     (0).bit_count()
 except AttributeError:  # pragma: no cover - Python < 3.10 fallback
     def hamming(a: int, b: int) -> int:  # type: ignore[no-redef]
-        return bin(a ^ b).count("1")
+        return bin(a ^ b).count("1")  # noqa: FURB161 - fallback for Python < 3.10 without int.bit_count()
 
 
 class UnionFind:
@@ -73,9 +73,7 @@ def group_duplicates(
     uf = UnionFind(n)
     for i in range(n):
         for j in range(i + 1, n):
-            if records[i]["md5"] == records[j]["md5"]:
-                uf.union(i, j)
-            elif (
+            if records[i]["md5"] == records[j]["md5"] or (
                 hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
                 or hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
             ):
