@@ -82,23 +82,24 @@ vision-cleanse /path/to/dataset --apply --coco /path/to/annotations.json
 Cấu trúc dataset kỳ vọng:
 
 ```
-dataset/
-  train/<class>/a.jpg   # hoặc train/a.jpg (không chia class)
-  val/<class>/b.jpg
-  test/<class>/c.jpg
-```
+dataset_root/                  <-- Thư mục gốc (root)
+│
+├── images/                    <-- Chứa toàn bộ ảnh
+│   ├── train/                 <-- Ảnh dùng để huấn luyện
+│   │   ├── img1.jpg
+│   │   └── img2.jpg
+│   └── val/                   <-- Ảnh dùng để đánh giá/validation
+│       └── img3.jpg
+│
+├── labels/                    <-- Chứa file nhãn dạng .txt tương ứng với từng ảnh
+│   ├── train/                 <-- Nhãn của tập train
+│   │   ├── img1.txt
+│   │   └── img2.txt
+│   └── val/                   <-- Nhãn của tập val
+│       └── img3.txt
+│
+└── data.yaml                  <-- File cấu hình đường dẫn và các lớp (classes)
 
-Bố cục YOLO (chuẩn Ultralytics) — cấu trúc kỳ vọng:
-
-```
-dataset_root/
-  images/train/img1.jpg
-  images/train/img2.jpg
-  images/val/img3.jpg
-  labels/train/img1.txt
-  labels/train/img2.txt
-  labels/val/img3.txt
-  data.yaml   # train: images/train, val: images/val, names: [cat, dog]
 ```
 
 Tập `test` là tùy chọn: dataset chỉ có `train`/`val` vẫn chạy đủ
