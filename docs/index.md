@@ -49,9 +49,19 @@ Bản tiếng Anh và tiếng Trung của README nằm ở `README.en.md` và
    (`images/`, `labels/`, `data.yaml`).
 2. **Extract** — băm exact (MD5/SHA-256) và hash cảm nhận (pHash, dHash).
 3. **Group** — gom nhóm exact + near-dup theo luật OR, ngưỡng 10.
-4. **Resolve** — giữ `test > val > train`, giữ ảnh tất định; nhóm
-   xung đột nhãn được giữ nguyên và ghi `conflict_report.csv`.
+4. **Resolve** — giữ `test > val > train` (không có test thì
+   `val > train`), giữ ảnh tất định; nhóm xung đột nhãn được giữ
+   nguyên và ghi `conflict_report.csv`.
 5. **Quarantine** — chuyển file bị loại kèm `manifest.json`, không
    bao giờ xóa thẳng.
 6. **Health** — 11 kiểm tra, kết luận `clean` khi mọi kiểm tra đạt.
 7. **Report + Charts** — `report.json` và 24 biểu đồ PNG.
+
+## Minh họa
+
+Hai ảnh minh họa AI cho docs (không phải số liệu thật — biểu đồ số
+liệu nằm ở trang [Biểu đồ](charts.md)):
+
+![Hai ảnh gần giống nhau: một ảnh được giữ, một ảnh vào quarantine](assets/illustrations/duplicates_concept.png)
+
+![Ba thư mục TRAIN, VAL, TEST với lá chắn bảo vệ tập TEST khỏi rò rỉ](assets/illustrations/splits_protection.png)

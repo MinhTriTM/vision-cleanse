@@ -1,5 +1,7 @@
 # VisionCleanse
 
+![VisionCleanse 主视觉图 — 杂乱照片经重复检测后整理入文件夹，重复照片进入隔离区](docs/assets/illustrations/hero_banner.png)
+
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -61,6 +63,22 @@ dataset/
   val/<class>/b.jpg
   test/<class>/c.jpg
 ```
+
+YOLO 布局（Ultralytics 标准）——期望结构：
+
+```
+dataset_root/
+  images/train/img1.jpg
+  images/train/img2.jpg
+  images/val/img3.jpg
+  labels/train/img1.txt
+  labels/train/img2.txt
+  labels/val/img3.txt
+  data.yaml   # train: images/train, val: images/val, names: [cat, dog]
+```
+
+`test` 划分是可选的：只有 train/val 的数据集同样可以完整运行，
+没有 test 时的保留优先级为 `val > train`。
 
 不存在的划分会被跳过并给出警告。报告写入
 `vision_cleanse_report/report.json`，出现标签冲突时还会写入

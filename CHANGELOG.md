@@ -7,6 +7,16 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
 ## [Unreleased]
 
 ### Added
+- Cây dataset kỳ vọng train/val-only cho bố cục YOLO
+  (`images/train/img1.jpg`, `images/train/img2.jpg`,
+  `images/val/img3.jpg` + `labels/` tương ứng + `data.yaml` chỉ có
+  `train`/`val`): chạy đủ chức năng, split `test` thiếu chỉ được báo
+  là "đã bỏ qua" chứ không phải lỗi; khi không có test, ưu tiên giữ
+  là `val > train`.
+- Parser `data.yaml`: tên class dạng dict của Ultralytics
+  (`names:` dạng block `0: cat` hoặc inline `{0: cat, 1: dog}`) và
+  khóa `path` (đường dẫn split được giải quyết theo `path` trước,
+  rồi mới theo thư mục chứa `data.yaml`).
 - CI GitHub Actions: test trên Python 3.10–3.13 × Ubuntu/macOS/Windows,
   coverage, ruff, mypy (chưa chặn CI), job benchmark.
 - Trang tài liệu MkDocs + Material, deploy GitHub Pages.
@@ -35,6 +45,9 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
   YOLO demo, tạo lại bằng `scripts/make_gallery.py`) + sơ đồ luồng
   pipeline `docs/assets/pipeline.png`, nhúng vào `docs/charts.md`,
   `docs/index.md` và README 3 ngôn ngữ.
+- Ảnh minh họa AI cho docs/README: `docs/assets/illustrations/`
+  (hero banner, minh họa trùng lặp, minh họa bảo vệ split) — ảnh
+  minh họa ý tưởng, không phải số liệu thật.
 
 ### Changed
 - `utils.discover()` nay trả về 3 giá trị `(records, missing, layout)`

@@ -34,17 +34,23 @@ def parse_data_yaml(path: str | Path) -> dict:
     """Parse the small subset of a YOLO ``data.yaml`` that we need.
 
     Returns ``{"names": list[str] | None, "nc": int | None,
-    "split_paths": {split: str}}`` for ``train``/``val``/``test``
-    entries. Everything else is ignored, and malformed input never
-    raises: it just yields whatever could be parsed.
+    "split_paths": {split: str}, "path": str | None}`` for
+    ``train``/``val``/``test`` entries. ``names`` accepts the list
+    form (block ``- name`` or inline ``[a, b]``) and the Ultralytics
+    dict form (block ``0: name`` or inline ``{0: name}``). ``path``
+    is the optional dataset base directory that ``train``/``val``/
+    ``test`` are relative to. Everything else is ignored, and
+    malformed input never raises: it just yields whatever could be
+    parsed.
     """
     names: list[str] | None = None
     nc: int | None = None
     split_paths: dict[str, str] = {}
+    path_base: str | None = None
     try:
         lines = Path(path).read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError):
-        return {"names": None, "nc": None, "split_paths": {}}
+        return {"names": None, "nc": None, "split_paths": {}, "path": None}
     i = 0
     while i < len(lines):
         raw = _strip_yaml_comment(lines[i]).rstrip()
@@ -58,26 +64,43 @@ def parse_data_yaml(path: str | Path) -> dict:
         if key == "names":
             if val.startswith("[") and val.endswith("]"):
                 names = [_unquote(v) for v in val[1:-1].split(",") if v.strip()]
+            elif val.startswith("{") and val.endswith("}"):
+                pairs = []
+                for piece in val[1:-1].split(","):
+                    if ":" not in piece:
+                        continue
+                    k, _, v = piece.partition(":")
+                    if k.strip().isdigit() and v.strip():
+                        pairs.append((int(k.strip()), _unquote(v)))
+                names = [v for _, v in sorted(pairs)]
             else:
                 items = []
+                dict_items = []
                 while i < len(lines):
                     item = _strip_yaml_comment(lines[i]).strip()
                     if item.startswith("- "):
                         items.append(_unquote(item[2:]))
                         i += 1
                     else:
-                        break
-                names = items
+                        k, _, v = item.partition(":")
+                        if k.strip().isdigit() and v.strip():
+                            dict_items.append((int(k.strip()), _unquote(v)))
+                            i += 1
+                        else:
+                            break
+                names = [v for _, v in sorted(dict_items)] if dict_items else items
         elif key == "nc":
             try:
                 nc = int(val)
             except ValueError:
                 pass
+        elif key == "path" and val:
+            path_base = _unquote(val)
         elif key in ("train", "val", "test", "validation") and val:
             split_paths["val" if key == "validation" else key] = _unquote(val)
     if not names:
         names = None
-    return {"names": names, "nc": nc, "split_paths": split_paths}
+    return {"names": names, "nc": nc, "split_paths": split_paths, "path": path_base}
 
 
 def detect_layout(root: str | Path) -> dict:
@@ -89,7 +112,9 @@ def detect_layout(root: str | Path) -> dict:
     optional ``data.yaml`` with class ``names``). A ``data.yaml``
     whose ``train``/``val``/``test`` entries resolve to existing
     directories also triggers YOLO mode, with those directories as
-    the image dirs.
+    the image dirs. When ``data.yaml`` has a ``path`` entry, split
+    paths resolve against it first and fall back to the ``data.yaml``
+    directory, so Ultralytics-style files keep working.
 
     Returns ``{"mode", "image_dirs", "label_dirs", "names",
     "data_yaml"}``. In classic mode the dir maps are empty.
@@ -105,13 +130,26 @@ def detect_layout(root: str | Path) -> dict:
         data_yaml = str(yaml_path)
         parsed = parse_data_yaml(yaml_path)
         names = parsed["names"]
+        base_dir = None
+        if parsed.get("path"):
+            pb = Path(parsed["path"])
+            if not pb.is_absolute():
+                pb = yaml_path.parent / pb
+            base_dir = Path(os.path.normpath(pb))
         for split, val in parsed["split_paths"].items():
             p = Path(val)
-            if not p.is_absolute():
-                p = yaml_path.parent / p
-            p = Path(os.path.normpath(p))
-            if p.is_dir():
-                split_paths[split] = p
+            if p.is_absolute():
+                candidates = [p]
+            else:
+                candidates = []
+                if base_dir is not None:
+                    candidates.append(base_dir / p)
+                candidates.append(yaml_path.parent / p)
+            for cand in candidates:
+                cand = Path(os.path.normpath(cand))
+                if cand.is_dir():
+                    split_paths[split] = cand
+                    break
     images_dir = root / "images"
     if not split_paths and not images_dir.is_dir():
         return {"mode": "classic", "image_dirs": {}, "label_dirs": {},

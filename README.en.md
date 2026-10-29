@@ -1,5 +1,7 @@
 # VisionCleanse
 
+![VisionCleanse hero illustration — messy photos inspected for duplicates, then organized into folders with duplicates quarantined](docs/assets/illustrations/hero_banner.png)
+
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -85,6 +87,23 @@ dataset/
   val/<class>/b.jpg
   test/<class>/c.jpg
 ```
+
+YOLO layout (Ultralytics standard) — the expected structure:
+
+```
+dataset_root/
+  images/train/img1.jpg
+  images/train/img2.jpg
+  images/val/img3.jpg
+  labels/train/img1.txt
+  labels/train/img2.txt
+  labels/val/img3.txt
+  data.yaml   # train: images/train, val: images/val, names: [cat, dog]
+```
+
+The `test` split is optional: a train/val-only dataset runs with
+full functionality, and without test the keep priority is
+`val > train`.
 
 Missing splits are skipped with a warning. Reports go to
 `vision_cleanse_report/report.json` and (on label conflicts)

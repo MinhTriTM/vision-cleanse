@@ -1,5 +1,7 @@
 # VisionCleanse
 
+![VisionCleanse — ảnh lộn xộn được soi trùng lặp rồi xếp gọn vào thư mục, ảnh trùng vào quarantine](docs/assets/illustrations/hero_banner.png)
+
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -85,6 +87,22 @@ dataset/
   val/<class>/b.jpg
   test/<class>/c.jpg
 ```
+
+Bố cục YOLO (chuẩn Ultralytics) — cấu trúc kỳ vọng:
+
+```
+dataset_root/
+  images/train/img1.jpg
+  images/train/img2.jpg
+  images/val/img3.jpg
+  labels/train/img1.txt
+  labels/train/img2.txt
+  labels/val/img3.txt
+  data.yaml   # train: images/train, val: images/val, names: [cat, dog]
+```
+
+Tập `test` là tùy chọn: dataset chỉ có `train`/`val` vẫn chạy đủ
+chức năng, và khi không có test thì ưu tiên giữ là `val > train`.
 
 Các split không tồn tại sẽ được bỏ qua kèm cảnh báo. Báo cáo ghi ra
 `vision_cleanse_report/report.json` và (nếu có xung đột nhãn)

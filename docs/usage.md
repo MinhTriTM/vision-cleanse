@@ -17,23 +17,44 @@ Nhãn YOLO `.txt` nằm cạnh ảnh. Nhãn (label) là tên thư mục class
 chứa ảnh; ảnh nằm trực tiếp dưới split thì nhãn rỗng và không gây
 xung đột nhãn.
 
-**YOLO (chuẩn Ultralytics):**
+**YOLO (chuẩn Ultralytics) — cấu trúc kỳ vọng:**
 
 ```
 dataset_root/
   images/
     train/img1.jpg
+    train/img2.jpg
     val/img3.jpg
   labels/
     train/img1.txt
+    train/img2.txt
     val/img3.txt
   data.yaml
 ```
 
-Tên class lấy từ `names` trong `data.yaml` (hỗ trợ cả dạng danh sách
-gạch đầu dòng và dạng inline `[cat, dog]`; `train`/`val`/`test`
-trong `data.yaml` nếu trỏ tới thư mục có sẵn cũng được dùng làm thư
-mục ảnh). Khi quarantine, file nhãn được giữ nguyên cây `labels/`.
+`data.yaml` mẫu:
+
+```yaml
+train: images/train
+val: images/val
+nc: 2
+names:
+  - cat
+  - dog
+```
+
+Tập `test` là tùy chọn: dataset chỉ có `train`/`val` vẫn chạy đủ
+chức năng, split thiếu chỉ được báo là "đã bỏ qua" chứ không phải
+lỗi. Khi không có `test`, thứ tự ưu tiên giữ là `val > train`.
+
+Tên class lấy từ `names` trong `data.yaml` (dạng danh sách gạch đầu
+dòng, inline `[cat, dog]`, hoặc dạng dict của Ultralytics `0: cat`
+/ `{0: cat, 1: dog}`); `train`/`val`/`test` trong `data.yaml` nếu trỏ
+tới thư mục có sẵn cũng được dùng làm thư mục ảnh — chấp nhận cả
+`./images/train`, `images/train/` và khóa `path` (đường dẫn trong
+`data.yaml` được giải quyết theo `path` trước, rồi mới theo thư mục
+chứa `data.yaml`). Khi quarantine, file nhãn được giữ nguyên cây
+`labels/`.
 
 Mỗi split là một thư mục con. Split không tồn tại sẽ được bỏ qua
 kèm cảnh báo.
@@ -68,7 +89,7 @@ phần Ngưỡng để biết vì sao không dùng AND).
 ## Quy tắc xử lý trùng lặp
 
 - Ưu tiên giữ `test > val > train`: trùng giữa test và train thì giữ
-  ở test, xóa ở train.
+  ở test, xóa ở train. Dataset không có test thì ưu tiên `val > train`.
 - Trong cùng một split, giữ ảnh có độ phân giải cao nhất, rồi file lớn
   nhất, rồi tên file nhỏ nhất (tất định).
 - Cùng ảnh nhưng khác class thì **không tự xóa**: cả nhóm được giữ lại
