@@ -52,6 +52,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Console Windows mặc định dùng cp1252, không in được tiếng Việt
+    # (đ, ễ, ...). Chuyển sang UTF-8 ngay từ đầu để CLI không vỡ
+    # trên Windows; môi trường không hỗ trợ thì bỏ qua.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
     args = build_parser().parse_args(argv)
     lang = normalize_lang(args.lang)
     charts_dir = args.charts_dir
