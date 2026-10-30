@@ -71,7 +71,7 @@ Tổng quan:
 - `split_sizes.png` — số ảnh mỗi split (cột)
 - `split_share.png` — tỉ lệ mỗi split (donut)
 - `class_images.png` — số ảnh mỗi class (cột, top 30 nếu nhiều class)
-- `class_split_stacked.png` — số ảnh mỗi class, xếp chồng theo split
+- `class_split_stacked.png` — số ảnh mỗi class, xếp chồng theo split (quá 30 class thì gộp thành top 30 + "other" thay vì bỏ qua)
 - `file_size_hist.png` — phân phối kích thước file (KB)
 - `width_hist.png`, `height_hist.png` — phân phối chiều ảnh (px)
 - `aspect_hist.png` — phân phối tỉ lệ w/h
@@ -86,7 +86,7 @@ Nhãn YOLO (chỉ khi có box hợp lệ):
 - `box_centers_scatter.png` — scatter tâm box (x, y)
 - `box_centers_heatmap.png` — heatmap tâm box 20×20
 - `box_wh_scatter.png` — scatter w vs h của box
-- `class_split_heatmap.png` — heatmap số box theo class × split
+- `class_split_heatmap.png` — heatmap số box theo class × split (quá 30 class thì gộp thành top 30 + "other" thay vì bỏ qua)
 
 Kết quả làm sạch:
 

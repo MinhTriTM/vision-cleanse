@@ -73,7 +73,7 @@ vision-cleanse ROOT [tùy chọn]
 | `--hash-algo` | `md5` | `md5` hoặc `sha256` cho vòng exact |
 | `--apply` | (không) | Không có cờ này = dry-run, không di chuyển file |
 | `--quarantine-dir` | `<root>_quarantine` | Thư mục quarantine khi `--apply` |
-| `--report-dir` | `vision_cleanse_report` | Nơi ghi `report.json` và `conflict_report.csv` |
+| `--report-dir` | `vision_cleanse_report` | Nơi ghi `report.json`, `conflict_report.csv` và `report.html` (xem dưới) |
 | `--coco` | (không) | File COCO JSON cần đồng bộ |
 | `--coco-output` | `<coco>.cleaned.json` | Nơi ghi COCO đã lọc |
 | `--lang` | `vi` | Ngôn ngữ thông báo: `vi`, `en`, `zh` |
@@ -85,6 +85,24 @@ vision-cleanse ROOT [tùy chọn]
 Một cặp ảnh được coi là trùng gần đúng khi pHash **hoặc** dHash nằm
 trong ngưỡng (luật OR — xem [README](https://github.com/MinhTriTM/vision-cleanse)
 phần Ngưỡng để biết vì sao không dùng AND).
+
+## Báo cáo HTML kiểm tra nhóm trùng
+
+Mỗi lần chạy có `--report-dir` đều ghi thêm `report.html`: một file
+HTML độc lập (không cần dataset đi kèm) để rà soát từng quyết định
+giữ/xóa bằng mắt trước khi tin vào kết quả:
+
+- Một thẻ cho mỗi nhóm trùng: ảnh **giữ lại** viền xanh, ảnh **chuyển
+  quarantine** viền cam kèm lý do (`duplicate_within_same_split` hoặc
+  `duplicate_in_lower_priority_split`), nhóm xung đột nhãn gắn cờ đỏ và
+  được giữ nguyên toàn bộ.
+- Ảnh hiển thị bằng thumbnail nén (tối đa 256px) nhúng trực tiếp vào
+  file; nhóm quá 100 ảnh chỉ hiển thị 100 ảnh đầu, danh sách đủ nằm
+  trong `report.json`.
+- Kèm theo: tóm tắt đợt chạy, chẩn đoán nhãn, bảng health findings và
+  gallery biểu đồ (khi biểu đồ nằm cùng thư mục báo cáo).
+- Bộ lọc theo phương pháp (exact/near), chỉ nhóm xung đột, và tìm theo
+  tên file — không cần máy chủ, mở file bằng trình duyệt là dùng được.
 
 ## Quy tắc xử lý trùng lặp
 

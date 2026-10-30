@@ -639,17 +639,38 @@ def generate_charts(report: dict, records: list[dict], outdir: str | Path) -> di
              _bar_svg([str(c) for c, _ in top], [n for _, n in top], [INDIGO, CYAN]),
              _foot_parts([f"Total <b>{total_class_images} images</b>",
                           f"{len(class_totals)} <b>classes</b>"]))
-        if len(splits) > 1 and len(class_totals) <= 30:
+        if len(splits) > 1:
             classes = sorted(class_totals)
-            series = [(s, _split_color(s), [dist.get(s, {}).get(c, 0) for c in classes])
-                      for s in splits]
-            make("class_split_stacked.png", "Images per class, stacked by split",
-                 f"{len(classes)} classes × {len(splits)} splits",
-                 _stacked_svg([str(c) for c in classes], series),
+            if len(classes) > 30:
+                # Too many classes for a readable stack: keep the top
+                # 30 and fold the rest into one "other" series instead
+                # of skipping the chart entirely.
+                top = [c for c, _ in class_totals.most_common(30)]
+                top_set = set(top)
+                rest = [c for c in classes if c not in top_set]
+                series = [
+                    (
+                        s,
+                        _split_color(s),
+                        [dist.get(s, {}).get(c, 0) for c in top]
+                        + [sum(dist.get(s, {}).get(c, 0) for c in rest)],
+                    )
+                    for s in splits
+                ]
+                chart_classes = top + ["other"]
+                suffix = " (top 30 + other)"
+            else:
+                series = [(s, _split_color(s), [dist.get(s, {}).get(c, 0) for c in classes])
+                          for s in splits]
+                chart_classes = classes
+                suffix = ""
+            make("class_split_stacked.png", f"Images per class, stacked by split{suffix}",
+                 f"{len(class_totals)} classes × {len(splits)} splits",
+                 _stacked_svg([str(c) for c in chart_classes], series),
                  _foot_parts([_legend_dots([(s, _split_color(s)) for s in splits]),
                               f"Total <b>{total_class_images} images</b>"]))
         else:
-            skip("class_split_stacked.png", "needs 2+ splits and <= 30 classes")
+            skip("class_split_stacked.png", "only one split scanned")
     else:
         skip("class_images.png", "no class information")
         skip("class_split_stacked.png", "no class information")
@@ -748,16 +769,31 @@ def generate_charts(report: dict, records: list[dict], outdir: str | Path) -> di
                           invert_y=False),
              "Width vs height, normalized fractions")
         classes = sorted(by_class)
-        if len(splits) > 1 and len(classes) <= 30:
-            matrix = [[sum(1 for b in boxes if b["class"] == c and b["split"] == s)
-                       for s in splits] for c in classes]
-            make("class_split_heatmap.png", "Boxes per class and split",
+        if len(splits) > 1:
+            if len(classes) > 30:
+                # Same top-30 + "other" fold as the stacked chart.
+                top = [c for c, _ in by_class.most_common(30)]
+                top_set = set(top)
+                matrix = [[sum(1 for b in boxes if b["class"] == c and b["split"] == s)
+                           for s in splits] for c in top]
+                matrix.append([sum(1 for b in boxes if b["class"] not in top_set
+                                   and b["split"] == s)
+                               for s in splits])
+                row_classes = top + ["other"]
+                row_labels = [class_name(c) for c in top] + ["other"]
+                suffix = " (top 30 + other)"
+            else:
+                matrix = [[sum(1 for b in boxes if b["class"] == c and b["split"] == s)
+                           for s in splits] for c in classes]
+                row_classes = classes
+                row_labels = [class_name(c) for c in classes]
+                suffix = ""
+            make("class_split_heatmap.png", f"Boxes per class and split{suffix}",
                  f"{len(classes)} classes × {len(splits)} splits",
-                 _class_split_heatmap_svg(classes, splits, matrix,
-                                          [class_name(c) for c in classes]),
+                 _class_split_heatmap_svg(row_classes, splits, matrix, row_labels),
                  _foot_parts([f"Total <b>{len(boxes)} boxes</b>", "darker = more boxes"]))
         else:
-            skip("class_split_heatmap.png", "needs 2+ splits and <= 30 classes")
+            skip("class_split_heatmap.png", "only one split scanned")
     else:
         for name in ("instances_per_image.png", "boxes_per_class.png",
                      "box_width_hist.png", "box_height_hist.png",

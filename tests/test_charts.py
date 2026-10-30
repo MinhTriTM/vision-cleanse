@@ -76,6 +76,55 @@ class TestCharts(unittest.TestCase):
             self.assertTrue((charts_dir / name).read_bytes().startswith(b"\x89PNG"), name)
 
 
+@unittest.skipUnless(HAS_WEASY, "weasyprint/pdftoppm not installed")
+class TestClassChartFallback(unittest.TestCase):
+    """Over-30-class datasets fold into top 30 + "other", not a skip."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def test_stacked_folds_top30_plus_other(self):
+        root = self.tmp / "many"
+        seed = 100
+        for split in ("train", "val"):
+            for i in range(35):
+                d = root / split / f"cls{i:02d}"
+                d.mkdir(parents=True)
+                photo_like(d / "a.jpg", seed=seed)
+                seed += 1
+        charts_dir = self.tmp / "mcharts"
+        report = clean(root, charts_dir=charts_dir, report_dir=None)
+        made = report["charts"]["generated"]
+        skipped = {s["chart"] for s in report["charts"]["skipped"]}
+        self.assertIn("class_split_stacked.png", made)
+        self.assertNotIn("class_split_stacked.png", skipped)
+        self.assertTrue((charts_dir / "class_split_stacked.png").read_bytes().startswith(b"\x89PNG"))
+
+    def test_heatmap_folds_top30_plus_other(self):
+        root = self.tmp / "ymany"
+        root.mkdir(parents=True)
+        names = "\n".join(f"  - c{i}" for i in range(35))
+        (root / "data.yaml").write_text(f"names:\n{names}\n", encoding="utf-8")
+        seed = 500
+        for split in ("train", "val"):
+            (root / "images" / split).mkdir(parents=True)
+            (root / "labels" / split).mkdir(parents=True)
+            for i in range(35):
+                photo_like(root / "images" / split / f"a{i:02d}.jpg", seed=seed)
+                seed += 1
+                (root / "labels" / split / f"a{i:02d}.txt").write_text(
+                    f"{i} 0.5 0.5 0.2 0.2\n", encoding="utf-8"
+                )
+        charts_dir = self.tmp / "ymcharts"
+        report = clean(root, charts_dir=charts_dir, report_dir=None)
+        made = report["charts"]["generated"]
+        skipped = {s["chart"] for s in report["charts"]["skipped"]}
+        self.assertIn("class_split_heatmap.png", made)
+        self.assertNotIn("class_split_heatmap.png", skipped)
+        self.assertTrue((charts_dir / "class_split_heatmap.png").read_bytes().startswith(b"\x89PNG"))
+
+
 class TestChartsMissingEngine(unittest.TestCase):
     def test_clear_error_without_weasyprint(self):
         outdir = Path(tempfile.mkdtemp())

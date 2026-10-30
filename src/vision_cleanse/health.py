@@ -114,6 +114,7 @@ def run_health_checks(
             label_files.append(p)
     if yolo is None:
         yolo = len(label_files) > 0
+    diag: dict | None = None
     if yolo:
         # Pair by exact expected label path: alongside the image in
         # classic mode, in the labels tree in YOLO mode.
@@ -126,6 +127,12 @@ def run_health_checks(
             lp = rec.get("label_path")
             if lp is None or not Path(lp).is_file():
                 add("missing_label", "warning", rec["path"])
+        names = (layout or {}).get("names")
+        diag_lines = 0
+        diag_malformed = 0
+        diag_empty = 0
+        diag_unknown_ids: set[int] = set()
+        diag_unknown_files = 0
         for lf in label_files:
             if lf not in expected:
                 add("orphan_label", "warning", lf)
@@ -138,7 +145,10 @@ def run_health_checks(
             content = [ln for ln in lines if ln.strip()]
             if not content:
                 add("empty_label", "warning", lf)
+                diag_empty += 1
                 continue
+            diag_lines += len(content)
+            file_unknown: set[int] = set()
             for i, ln in enumerate(content, start=1):
                 parts = ln.split()
                 ok = len(parts) == 5
@@ -151,6 +161,34 @@ def run_health_checks(
                         ok = False
                 if not ok:
                     add("invalid_label", "error", lf, f"line {i}: {ln.strip()[:60]}")
+                    diag_malformed += 1
+                elif names is not None and cls >= len(names):
+                    # Valid 5-column row, but the class id has no name
+                    # in data.yaml: a dialect mismatch (e.g. a dataset
+                    # whose .txt ids run past the names list), not a
+                    # corrupt line. Warn once per file, not per line.
+                    file_unknown.add(cls)
+            if file_unknown:
+                diag_unknown_ids.update(file_unknown)
+                diag_unknown_files += 1
+                add(
+                    "unknown_class",
+                    "warning",
+                    lf,
+                    f"class ids outside data.yaml names ({len(names)} names): "
+                    + ", ".join(str(c) for c in sorted(file_unknown)),
+                )
+        diag = {
+            "label_files": len(label_files),
+            "lines_scanned": diag_lines,
+            "malformed_lines": diag_malformed,
+            "empty_label_files": diag_empty,
+            "empty_label_rate": (diag_empty / len(label_files))
+            if label_files
+            else None,
+            "unknown_class_ids": sorted(diag_unknown_ids),
+            "unknown_class_files": diag_unknown_files,
+        }
 
     # --- Name collisions across splits/classes ---
     by_name: dict[str, list[dict]] = {}
@@ -198,6 +236,10 @@ def run_health_checks(
         "findings": findings,
         "counts": counts,
         "class_distribution": distribution,
+        # Summary of the YOLO label scan (None when the YOLO checks
+        # did not run): rates and dialect-mismatch signals that the
+        # per-file findings alone do not show at a glance.
+        "label_diagnostics": diag,
         # "Clean" = every enabled check passed (errors and warnings).
         # Info findings never block it. Not an absolute guarantee.
         "clean": counts["errors"] == 0 and counts["warnings"] == 0,

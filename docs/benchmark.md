@@ -50,3 +50,33 @@ Bài học, và cách xử lý đúng:
 ```bash
 python benchmarks/benchmark_near_dup.py
 ```
+
+## Scale test: CrowdHuman 15.000 ảnh (tháng 10/2026)
+
+Chạy thật trên Kaggle bằng notebook `VisionCleanse_CrowdHuman_15k_Test_v2`
+(dataset `menhari/crowd-human-crowd-detection`, 17,60 GB, định dạng YOLO
+1 class `person`, lệnh `--splits train val test --lang vi --apply
+--charts`). Bản chạy v1 thất bại vì không xác định được split; bản v2
+tìm split từ tên thư mục cha và đã chạy xong. Kết quả (từ
+`report.json` của đợt chạy):
+
+| Chỉ số | Giá trị |
+|---|---|
+| Ảnh đã quét | 15.000 (train 12.000, val 1.500, test 1.500) |
+| Nhóm trùng | 176 (0 exact, 176 near) |
+| Chuyển quarantine | 114 |
+| Xung đột nhãn | 64 |
+| Health | 1.019 cảnh báo, 0 lỗi — gồm 1.010 file nhãn rỗng (6,7%) và 9 nhóm trùng trong nội bộ test |
+| Biểu đồ | 23 tạo, 2 skip (class_split_* vượt 30 class) |
+
+Hai phát hiện từ đợt chạy này đã thành tính năng (xem
+[health.md](health.md) và [charts.md](charts.md)):
+
+- Nhãn của dataset chứa class id ngoài phạm vi `names` (tới ~77) làm
+  tập class phình quá 30 và khiến 2 biểu đồ theo class bị bỏ qua →
+  nay có cảnh báo `unknown_class`, khối `label_diagnostics` trong báo
+  cáo, và biểu đồ gộp top 30 + "other" thay vì skip.
+- File nhãn rỗng chiếm 6,7% nhưng chỉ là cảnh báo, không tự xóa →
+  nay có tỉ lệ `empty_label_rate` trong chẩn đoán nhãn.
+
+Gallery 23 biểu đồ của đợt chạy nằm ở `docs/assets/crowdhuman/`.

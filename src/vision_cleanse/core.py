@@ -233,6 +233,9 @@ def clean(
 
     # --- Side effects (apply mode only, except reports) ---
     if report_dir is not None:
+        from .html_report import write_html_report
+
+        report["html_report"] = str(write_html_report(report_dir, report, records))
         utils.write_json_report(report_dir, report)
         if conflicts:
             utils.write_conflict_report(report_dir, conflicts)

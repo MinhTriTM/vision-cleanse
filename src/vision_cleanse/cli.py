@@ -93,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
     print(t("to_quarantine", lang, n=report["to_quarantine"])
           + " | " + t("conflicts", lang, n=report["label_conflicts"]))
     print(t("report", lang, p=f"{args.report_dir}/report.json"))
+    if "html_report" in report:
+        print(t("html_report", lang, p=report["html_report"]))
     if "charts" in report:
         ch = report["charts"]
         print(t("charts_done", lang, n=len(ch["generated"]), p=ch["dir"])
@@ -110,6 +112,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         c = health["counts"]
         print(t("health_issues", lang, n=c["total"], e=c["errors"], w=c["warnings"]))
+        diag = health.get("label_diagnostics")
+        if diag and (diag["empty_label_files"] or diag["unknown_class_files"]
+                     or diag["malformed_lines"]):
+            rate = diag["empty_label_rate"]
+            print(t("label_diag", lang,
+                    files=diag["label_files"], lines=diag["lines_scanned"],
+                    malformed=diag["malformed_lines"],
+                    empty=diag["empty_label_files"],
+                    rate=f"{100.0 * rate:.1f}%" if rate is not None else "—",
+                    unknown=", ".join(map(str, diag["unknown_class_ids"])) or "—"))
         for f in health["findings"][:50]:
             detail = f" ({f['detail']})" if f["detail"] else ""
             print(f"  [{f['severity']}] {t('check_' + f['check'], lang)}: "
