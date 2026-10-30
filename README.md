@@ -202,6 +202,56 @@ Toàn bộ ảnh mẫu từ dataset demo (23 biểu đồ, sơ đồ pipeline v�
 
 ![Ba thư mục TRAIN, VAL, TEST với lá chắn bảo vệ tập TEST khỏi rò rỉ](docs/assets/illustrations/splits_protection.png)
 
+### Gallery: CrowdHuman 15.000 ảnh (chạy thật trên Kaggle)
+
+Kết quả scale test trên dataset `menhari/crowd-human-crowd-detection` (17,60 GB, YOLO 1 class `person`): 15.000 ảnh (train 12.000, val 1.500, test 1.500), 176 nhóm trùng near, 114 file quarantine, 64 xung đột nhãn, health 1.019 cảnh báo / 0 lỗi. Chi tiết ở `docs/benchmark.md`. Đợt chạy này có 23/25 biểu đồ — 2 biểu đồ theo class bị skip vì tập class vượt 30, từ phiên bản này đã gộp thành top 30 + "other" thay vì bỏ qua.
+
+![Số ảnh mỗi split (CrowdHuman)](docs/assets/crowdhuman/split_sizes.png)
+
+![Tỉ lệ mỗi split (CrowdHuman)](docs/assets/crowdhuman/split_share.png)
+
+![Số ảnh mỗi class (CrowdHuman)](docs/assets/crowdhuman/class_images.png)
+
+![Phân phối kích thước file (CrowdHuman)](docs/assets/crowdhuman/file_size_hist.png)
+
+![Phân phối chiều rộng ảnh (CrowdHuman)](docs/assets/crowdhuman/width_hist.png)
+
+![Phân phối chiều cao ảnh (CrowdHuman)](docs/assets/crowdhuman/height_hist.png)
+
+![Phân phối tỉ lệ w/h (CrowdHuman)](docs/assets/crowdhuman/aspect_hist.png)
+
+![Phân phối diện tích ảnh (CrowdHuman)](docs/assets/crowdhuman/area_hist.png)
+
+![Số box mỗi ảnh (CrowdHuman)](docs/assets/crowdhuman/instances_per_image.png)
+
+![Số box mỗi class (CrowdHuman)](docs/assets/crowdhuman/boxes_per_class.png)
+
+![Phân phối chiều rộng box (CrowdHuman)](docs/assets/crowdhuman/box_width_hist.png)
+
+![Phân phối chiều cao box (CrowdHuman)](docs/assets/crowdhuman/box_height_hist.png)
+
+![Phân phối diện tích box (CrowdHuman)](docs/assets/crowdhuman/box_area_hist.png)
+
+![Scatter tâm box (CrowdHuman)](docs/assets/crowdhuman/box_centers_scatter.png)
+
+![Heatmap tâm box (CrowdHuman)](docs/assets/crowdhuman/box_centers_heatmap.png)
+
+![Scatter w vs h của box (CrowdHuman)](docs/assets/crowdhuman/box_wh_scatter.png)
+
+![Nhóm trùng theo phương pháp (CrowdHuman)](docs/assets/crowdhuman/dup_by_method.png)
+
+![Venn nhóm trùng theo split (CrowdHuman)](docs/assets/crowdhuman/duplicate_groups_venn.png)
+
+![File bị loại theo split (CrowdHuman)](docs/assets/crowdhuman/removals_by_split.png)
+
+![File bị loại theo lý do (CrowdHuman)](docs/assets/crowdhuman/removals_by_reason.png)
+
+![Kept vs quarantined mỗi split (CrowdHuman)](docs/assets/crowdhuman/kept_vs_quarantined.png)
+
+![Vấn đề sức khỏe theo kiểm tra (CrowdHuman)](docs/assets/crowdhuman/health_by_check.png)
+
+![Vấn đề sức khỏe theo mức độ (CrowdHuman)](docs/assets/crowdhuman/health_by_severity.png)
+
 ## Ngưỡng
 
 Một cặp ảnh được coi là trùng gần đúng khi pHash **hoặc** dHash nằm

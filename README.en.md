@@ -202,6 +202,56 @@ Full sample gallery from the demo dataset (23 charts, pipeline diagram and illus
 
 ![TRAIN, VAL, TEST folders with a shield protecting the TEST set from leakage](docs/assets/illustrations/splits_protection.png)
 
+### Gallery: CrowdHuman 15,000 images (real Kaggle run)
+
+Scale-test results on `menhari/crowd-human-crowd-detection` (17.60 GB, YOLO single class `person`): 15,000 images (train 12,000, val 1,500, test 1,500), 176 near-duplicate groups, 114 files quarantined, 64 label conflicts, health 1,019 warnings / 0 errors. Details in `docs/benchmark.md`. This run produced 23 of 25 charts — the 2 class charts were skipped because the class set exceeded 30; current versions fold into top 30 + "other" instead of skipping.
+
+![Images per split (CrowdHuman)](docs/assets/crowdhuman/split_sizes.png)
+
+![Split share (CrowdHuman)](docs/assets/crowdhuman/split_share.png)
+
+![Images per class (CrowdHuman)](docs/assets/crowdhuman/class_images.png)
+
+![File size distribution (CrowdHuman)](docs/assets/crowdhuman/file_size_hist.png)
+
+![Image width distribution (CrowdHuman)](docs/assets/crowdhuman/width_hist.png)
+
+![Image height distribution (CrowdHuman)](docs/assets/crowdhuman/height_hist.png)
+
+![Aspect ratio distribution (CrowdHuman)](docs/assets/crowdhuman/aspect_hist.png)
+
+![Image area distribution (CrowdHuman)](docs/assets/crowdhuman/area_hist.png)
+
+![Boxes per image (CrowdHuman)](docs/assets/crowdhuman/instances_per_image.png)
+
+![Boxes per class (CrowdHuman)](docs/assets/crowdhuman/boxes_per_class.png)
+
+![Box width distribution (CrowdHuman)](docs/assets/crowdhuman/box_width_hist.png)
+
+![Box height distribution (CrowdHuman)](docs/assets/crowdhuman/box_height_hist.png)
+
+![Box area distribution (CrowdHuman)](docs/assets/crowdhuman/box_area_hist.png)
+
+![Box centers scatter (CrowdHuman)](docs/assets/crowdhuman/box_centers_scatter.png)
+
+![Box center heatmap (CrowdHuman)](docs/assets/crowdhuman/box_centers_heatmap.png)
+
+![Box width vs height (CrowdHuman)](docs/assets/crowdhuman/box_wh_scatter.png)
+
+![Duplicate groups by method (CrowdHuman)](docs/assets/crowdhuman/dup_by_method.png)
+
+![Duplicate groups Venn by split (CrowdHuman)](docs/assets/crowdhuman/duplicate_groups_venn.png)
+
+![Removals by split (CrowdHuman)](docs/assets/crowdhuman/removals_by_split.png)
+
+![Removals by reason (CrowdHuman)](docs/assets/crowdhuman/removals_by_reason.png)
+
+![Kept vs quarantined per split (CrowdHuman)](docs/assets/crowdhuman/kept_vs_quarantined.png)
+
+![Health issues by check (CrowdHuman)](docs/assets/crowdhuman/health_by_check.png)
+
+![Health issues by severity (CrowdHuman)](docs/assets/crowdhuman/health_by_severity.png)
+
 ## Thresholds
 
 A pair counts as a near-duplicate when pHash **or** dHash is within

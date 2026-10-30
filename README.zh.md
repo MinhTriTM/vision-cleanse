@@ -175,6 +175,56 @@ vision-cleanse /path/to/dataset --charts
 
 ![TRAIN、VAL、TEST 文件夹与保护 TEST 集免于泄漏的护盾](docs/assets/illustrations/splits_protection.png)
 
+### 画廊：CrowdHuman 15,000 张图像（Kaggle 真实运行）
+
+在 `menhari/crowd-human-crowd-detection`（17.60 GB，YOLO 单类 `person`）上的规模测试结果：15,000 张图像（train 12,000，val 1,500，test 1,500），176 个近似重复组，114 个文件隔离，64 个标签冲突，健康检查 1,019 个警告 / 0 个错误。详情见 `docs/benchmark.md`。本次运行生成了 25 张图表中的 23 张——2 张类别图表因类别数超过 30 而被跳过，当前版本改为 top 30 + “other” 而不再跳过。
+
+![每划分图像数量 (CrowdHuman)](docs/assets/crowdhuman/split_sizes.png)
+
+![划分占比 (CrowdHuman)](docs/assets/crowdhuman/split_share.png)
+
+![每类图像数量 (CrowdHuman)](docs/assets/crowdhuman/class_images.png)
+
+![文件大小分布 (CrowdHuman)](docs/assets/crowdhuman/file_size_hist.png)
+
+![图像宽度分布 (CrowdHuman)](docs/assets/crowdhuman/width_hist.png)
+
+![图像高度分布 (CrowdHuman)](docs/assets/crowdhuman/height_hist.png)
+
+![宽高比分布 (CrowdHuman)](docs/assets/crowdhuman/aspect_hist.png)
+
+![图像面积分布 (CrowdHuman)](docs/assets/crowdhuman/area_hist.png)
+
+![每图目标数量 (CrowdHuman)](docs/assets/crowdhuman/instances_per_image.png)
+
+![每类标注框数量 (CrowdHuman)](docs/assets/crowdhuman/boxes_per_class.png)
+
+![标注框宽度分布 (CrowdHuman)](docs/assets/crowdhuman/box_width_hist.png)
+
+![标注框高度分布 (CrowdHuman)](docs/assets/crowdhuman/box_height_hist.png)
+
+![标注框面积分布 (CrowdHuman)](docs/assets/crowdhuman/box_area_hist.png)
+
+![标注框中心散点图 (CrowdHuman)](docs/assets/crowdhuman/box_centers_scatter.png)
+
+![标注框中心热力图 (CrowdHuman)](docs/assets/crowdhuman/box_centers_heatmap.png)
+
+![标注框宽高散点图 (CrowdHuman)](docs/assets/crowdhuman/box_wh_scatter.png)
+
+![按方法统计重复组 (CrowdHuman)](docs/assets/crowdhuman/dup_by_method.png)
+
+![按划分统计重复组 Venn 图 (CrowdHuman)](docs/assets/crowdhuman/duplicate_groups_venn.png)
+
+![按划分统计移除文件 (CrowdHuman)](docs/assets/crowdhuman/removals_by_split.png)
+
+![按原因统计移除文件 (CrowdHuman)](docs/assets/crowdhuman/removals_by_reason.png)
+
+![每划分保留与隔离对比 (CrowdHuman)](docs/assets/crowdhuman/kept_vs_quarantined.png)
+
+![按检查项统计健康问题 (CrowdHuman)](docs/assets/crowdhuman/health_by_check.png)
+
+![按严重程度统计健康问题 (CrowdHuman)](docs/assets/crowdhuman/health_by_severity.png)
+
 ## 阈值
 
 当 pHash **或** dHash 的汉明距离在阈值内（默认 64 位哈希取 10）时，一对图片即被视为近似重复。两种哈希互补：dHash 读取水平梯度符号，在 JPEG 噪声下非常稳定（实测即使 JPEG 质量为 30 时距离仍为 0，包括 pHash 会漂移至 16 的平滑图片）；pHash 读取全局低频结构，能发现 dHash 看不见的变化（dHash 只比较左右相邻像素）。OR 规则偏向召回；由于文件只是被隔离并附报告，永不静默删除，用户仍可复核。请在自己的数据上实测后再用
