@@ -80,6 +80,25 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
 - `utils.discover()` nay trả về 3 giá trị `(records, missing, layout)`
   thay vì 2; mỗi record thêm `classes` và `label_path`.
 
+## [0.2.2] - 2026-11-01
+
+### Added
+- Luật gom nhóm near mới `--near-mode or|and` (mặc định `or`,
+  giữ tương thích ngược) và `clean(..., near_mode=...)`: `and`
+  chỉ gộp một cặp khi CẢ pHash VÀ dHash đều trong ngưỡng. Luật
+  `or` duy nhất trước đây tạo dương tính giả trên tập ảnh có bố
+  cục giống nhau (cặp ảnh khác nhau chạm ngưỡng trên 1 hash trong
+  khi hash còn lại lệch xa 18–30, đo thực tế trên bộ nấm 25 loài:
+  162 nhóm near, trong đó nhiều nhóm sai) — `and` loại các cặp
+  này, đổi lại có thể bỏ sót cặp nén JPEG mạnh trên ảnh trơn
+  (pHash trôi tới 16 trong khi dHash bằng 0) mà `or` bắt được.
+  `report["near_mode"]` ghi lại luật đã dùng để kết quả kiểm
+  chứng được.
+- Test `TestNearMode` (5 test): cặp chạm ngưỡng 1 hash chỉ gộp
+  dưới `or`, cặp cả 2 hash trong ngưỡng gộp dưới cả 2 luật, cặp
+  ngoài ngưỡng không gộp dưới luật nào, exact vẫn gộp dưới cả 2
+  luật, `near_mode` lạ báo `ValueError`.
+
 ## [0.2.0] - 2026-10-29
 
 ### Added

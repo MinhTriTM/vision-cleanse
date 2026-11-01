@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Phiên bản hiện tại: **0.2.1**. ([English](README.en.md) · [中文](README.zh.md))
+Phiên bản hiện tại: **0.2.2**. ([English](README.en.md) · [中文](README.zh.md))
 
 Làm sạch dataset Computer Vision: phát hiện trùng lặp và ngăn rò rỉ
 dữ liệu giữa Train / Val / Test.
@@ -77,6 +77,9 @@ vision-cleanse /path/to/dataset --apply --lang en --yolo
 
 # Kèm đồng bộ COCO
 vision-cleanse /path/to/dataset --apply --coco /path/to/annotations.json
+
+# Luật near chặt hơn: chỉ gộp khi CẢ pHash VÀ dHash đều trong ngưỡng
+vision-cleanse /path/to/dataset --near-mode and
 ```
 
 Cấu trúc dataset kỳ vọng:

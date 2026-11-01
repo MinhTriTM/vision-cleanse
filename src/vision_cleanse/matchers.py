@@ -15,6 +15,15 @@ low-frequency structure and catches changes dHash is blind to
 so the MVP uses OR and relies on quarantine + reporting --
 never silent deletion -- to absorb the looser rule. A geometric
 verification ring (SIFT + RANSAC) tightens this later.
+
+Since 0.2.2, :func:`group_duplicates` accepts ``near_mode``:
+``"or"`` (default, as above) or ``"and"`` (both hashes must be
+within threshold). ``"and"`` removes the borderline single-hash
+collisions seen on similar-composition photo sets -- pairs that
+touch the threshold on one hash while the other disagrees
+strongly -- at the cost of the recall loss described above.
+Pick per dataset; :func:`vision_cleanse.core.clean` records the
+mode in ``report["near_mode"]``.
 """
 
 from __future__ import annotations
@@ -60,6 +69,7 @@ def group_duplicates(
     records: list[dict],
     phash_threshold: int = 10,
     dhash_threshold: int = 10,
+    near_mode: str = "or",
 ) -> list[dict]:
     """Group records that are exact or near duplicates.
 
@@ -68,15 +78,21 @@ def group_duplicates(
     ``{"members": [...], "method": "exact" | "near"}`` dicts, where
     ``members`` are the record indices. ``method`` is ``"exact"``
     only when every member shares one MD5; otherwise ``"near"``.
+
+    ``near_mode`` selects the near rule: ``"or"`` (default) groups
+    a pair when either hash is within threshold; ``"and"`` requires
+    both. Anything else raises :class:`ValueError`.
     """
+    if near_mode not in ("or", "and"):
+        raise ValueError(f"unknown near_mode: {near_mode!r} (expected 'or' or 'and')")
     n = len(records)
     uf = UnionFind(n)
     for i in range(n):
         for j in range(i + 1, n):
-            if records[i]["md5"] == records[j]["md5"] or (
-                hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
-                or hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
-            ):
+            dp = hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
+            dd = hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
+            near = (dp or dd) if near_mode == "or" else (dp and dd)
+            if records[i]["md5"] == records[j]["md5"] or near:
                 uf.union(i, j)
     out = []
     for members in uf.groups():

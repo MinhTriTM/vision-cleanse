@@ -103,5 +103,47 @@ class TestPerceptualHash(unittest.TestCase):
         self.assertFalse(self._grouped(self.photo, self.tmp / "photo2.png"))
 
 
+class TestNearMode(unittest.TestCase):
+    """OR vs AND grouping on synthetic hash records (0.2.2)."""
+
+    def _rec(self, md5, ph, dh):
+        return {"path": md5, "md5": md5, "phash": ph, "dhash": dh}
+
+    def _grouped(self, a, b, **kw):
+        return len(group_duplicates([a, b], **kw)) == 1
+
+    def test_one_hash_only_groups_under_or_not_and(self):
+        # pHash at the threshold (10), dHash far away (30): the
+        # borderline single-hash collision seen on the mushroom set.
+        a = self._rec("a", 0, 0)
+        b = self._rec("b", (1 << 10) - 1, (1 << 30) - 1)
+        self.assertTrue(self._grouped(a, b, near_mode="or"))
+        self.assertFalse(self._grouped(a, b, near_mode="and"))
+
+    def test_both_within_groups_under_both_modes(self):
+        a = self._rec("a", 0, 0)
+        b = self._rec("b", (1 << 5) - 1, (1 << 8) - 1)
+        self.assertTrue(self._grouped(a, b, near_mode="or"))
+        self.assertTrue(self._grouped(a, b, near_mode="and"))
+
+    def test_neither_within_groups_under_neither_mode(self):
+        a = self._rec("a", 0, 0)
+        b = self._rec("b", (1 << 20) - 1, (1 << 25) - 1)
+        self.assertFalse(self._grouped(a, b, near_mode="or"))
+        self.assertFalse(self._grouped(a, b, near_mode="and"))
+
+    def test_exact_groups_under_both_modes(self):
+        a = self._rec("same", 0, 0)
+        b = self._rec("same", (1 << 40) - 1, (1 << 40) - 1)
+        self.assertTrue(self._grouped(a, b, near_mode="or"))
+        self.assertTrue(self._grouped(a, b, near_mode="and"))
+
+    def test_invalid_mode_raises(self):
+        a = self._rec("a", 0, 0)
+        b = self._rec("b", 0, 0)
+        with self.assertRaises(ValueError):
+            group_duplicates([a, b], near_mode="xor")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-当前版本：**0.2.1**。([Tiếng Việt](README.md) · [English](README.en.md))
+当前版本：**0.2.2**。([Tiếng Việt](README.md) · [English](README.en.md))
 
 清理计算机视觉数据集：检测近似重复图片，防止训练集 / 验证集 / 测试集之间的数据泄漏。
 
@@ -53,6 +53,9 @@ vision-cleanse /path/to/dataset --apply --lang zh --yolo
 
 # 附带 COCO 同步
 vision-cleanse /path/to/dataset --apply --coco /path/to/annotations.json
+
+# 更严格的近似规则：仅当 pHash 与 dHash 同时在阈值内才分组
+vision-cleanse /path/to/dataset --near-mode and
 ```
 
 期望的数据集结构：

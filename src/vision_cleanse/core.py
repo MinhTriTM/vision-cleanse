@@ -97,6 +97,7 @@ def clean(
     phash_threshold: int = 10,
     dhash_threshold: int = 10,
     hash_algo: str = "md5",
+    near_mode: str = "or",
     dry_run: bool = True,
     quarantine_dir: str | Path | None = None,
     report_dir: str | Path | None = None,
@@ -120,6 +121,11 @@ def clean(
     phash_threshold, dhash_threshold: max Hamming distance for a
         near-duplicate pair (either hash within threshold groups
         the pair -- see matchers.py for why OR, not AND).
+    near_mode: "or" (default) or "and" (both hashes within
+        threshold). "and" is stricter: it removes borderline
+        single-hash collisions on similar-composition photo sets,
+        at the cost of missing heavily compressed smooth pairs
+        that OR catches. Recorded in report["near_mode"].
     dry_run: when True (default) nothing moves; the report only
         lists what *would* be quarantined.
     quarantine_dir: where removed files are moved in apply mode.
@@ -164,7 +170,7 @@ def clean(
                     "width": w, "height": h, "size": size})
 
     usable = [r for r in records if "md5" in r]
-    groups = group_duplicates(usable, phash_threshold, dhash_threshold)
+    groups = group_duplicates(usable, phash_threshold, dhash_threshold, near_mode)
     # group_duplicates indexes into ``usable``; resolve against it.
     resolved = [resolve_group(i, g, usable) for i, g in enumerate(groups)]
     # Full member list per group (kept + removed) for the Venn chart:
@@ -204,6 +210,7 @@ def clean(
         "images_found": len(records),
         "images_unreadable": unreadable,
         "duplicate_groups": len(groups),
+        "near_mode": near_mode,
         "groups_exact": sum(1 for g in groups if g["method"] == "exact"),
         "groups_near": sum(1 for g in groups if g["method"] == "near"),
         "to_quarantine": len(removals),

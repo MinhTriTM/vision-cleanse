@@ -26,6 +26,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Max pHash Hamming distance for a near-duplicate pair (default 10)")
     p.add_argument("--dhash-threshold", type=int, default=10,
                    help="Max dHash Hamming distance for a near-duplicate pair (default 10)")
+    p.add_argument("--near-mode", default="or", choices=["or", "and"],
+                   help="Near-duplicate rule: 'or' groups a pair when either hash is within "
+                        "threshold (default); 'and' requires both (stricter, fewer false "
+                        "positives on similar-composition photo sets)")
     p.add_argument("--hash-algo", default="md5", choices=["md5", "sha256"],
                    help="Exact-match hash (default md5)")
     p.add_argument("--apply", action="store_true",
@@ -72,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
             phash_threshold=args.phash_threshold,
             dhash_threshold=args.dhash_threshold,
             hash_algo=args.hash_algo,
+            near_mode=args.near_mode,
             dry_run=not args.apply,
             quarantine_dir=args.quarantine_dir,
             report_dir=args.report_dir,

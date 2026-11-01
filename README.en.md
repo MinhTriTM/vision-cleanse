@@ -6,7 +6,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Current version: **0.2.1**. ([Tiếng Việt](README.md) · [中文](README.zh.md))
+Current version: **0.2.2**. ([Tiếng Việt](README.md) · [中文](README.zh.md))
 
 Clean computer vision datasets: detect near-duplicates and prevent
 data leakage between Train / Val / Test.
@@ -77,6 +77,9 @@ vision-cleanse /path/to/dataset --apply --lang en --yolo
 
 # With COCO sync
 vision-cleanse /path/to/dataset --apply --coco /path/to/annotations.json
+
+# Stricter near rule: group only when BOTH pHash AND dHash are within threshold
+vision-cleanse /path/to/dataset --near-mode and
 ```
 
 Expected dataset layout:
