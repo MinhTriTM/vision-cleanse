@@ -104,6 +104,19 @@ def phash(path: str | Path, hash_size: int = 8, highfreq_factor: int = 4) -> int
     return _bits_to_int(low > median)
 
 
-def hash_hex(value: int, bits: int = 64) -> str:
+def is_blank(path: str | Path) -> bool:
+    """True when the image carries (almost) no structure.
+
+    Grayscale-resized (32x32) standard deviation below 1.0 -- the
+    same criterion the health check uses for "blank" images, but
+    measured on the small image so it costs one cheap decode.
+    Solid images have no structure for perceptual hashes to read:
+    their dHash is always 0 and their pHash is float noise, so
+    grouping them as near-duplicates is meaningless. Since 0.2.3,
+    blank records are excluded from near-duplicate edges (byte
+    identical blanks still group as exact).
+    """
+    pixels = _grayscale_pixels(path, (32, 32))
+    return float(pixels.std()) < 1.0
     """Render an integer hash as a zero-padded hex string."""
     return format(value, f"0{bits // 4}x")

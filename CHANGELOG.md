@@ -80,6 +80,32 @@ dạng [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) và
 - `utils.discover()` nay trả về 3 giá trị `(records, missing, layout)`
   thay vì 2; mỗi record thêm `classes` và `label_path`.
 
+## [0.2.3] - 2026-11-01
+
+### Fixed
+- Đồng bộ COCO khớp theo đường dẫn thay vì tên trần: `file_name`
+  có tiền tố thư mục (`"train/a.jpg"`) nay được loại đúng (trước
+  đây không loại gì cả, ảnh đã quarantine vẫn nằm trong COCO
+  sạch); tên trần trùng nhau ở 2 split (`"a.jpg"` ở cả train và
+  val) nay được giữ lại kèm cảnh báo trong `coco_sync["warnings"]`
+  thay vì xóa cả 2 (trước đây xóa oan annotation của split còn
+  lại). Tên trần duy nhất vẫn loại như cũ.
+- Quarantine ghi đè khi thư mục ảnh nằm ngoài root (đường dẫn
+  tuyệt đối trong `data.yaml`): đích dự phòng nay thêm hậu tố
+  hash của đường dẫn nguồn khi đã tồn tại, thay vì ghi đè im
+  lặng làm mất file quarantine trước.
+
+### Changed
+- Ảnh trơn/đơn sắc (độ lệch chuẩn ảnh xám 32×32 dưới 1.0) không
+  còn tạo cạnh near: dHash của ảnh trơn luôn bằng 0 và pHash chỉ
+  là nhiễu float nên gộp chúng không có ý nghĩa; ảnh trơn giống
+  hệt từng byte vẫn gộp qua cạnh exact. `report["blank_images"]`
+  ghi số ảnh trơn đã loại khỏi gộp near.
+
+### Added
+- Test: 3 test COCO khớp đường dẫn, 1 test quarantine ngoài
+  root, 4 test ảnh trơn (kèm kiểm chứng `clean()` đầu-cuối).
+
 ## [0.2.2] - 2026-11-01
 
 ### Added

@@ -147,3 +147,54 @@ class TestNearMode(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBlank(unittest.TestCase):
+    """Solid images are excluded from near grouping (0.2.3)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _solid(self, name, value):
+        from PIL import Image
+        p = self.tmp / name
+        Image.new("L", (64, 64), value).save(p)
+        return p
+
+    def test_is_blank(self):
+        from vision_cleanse.extractors import is_blank
+        self.assertTrue(is_blank(self._solid("black.png", 0)))
+        self.assertTrue(is_blank(self._solid("white.png", 255)))
+        self.assertFalse(is_blank(gradient(self.tmp / "grad.png")))
+
+    def test_blank_records_never_form_near_edges(self):
+        recs = [
+            {"path": "black", "md5": "b1", "phash": 0, "dhash": 0, "blank": True},
+            {"path": "white", "md5": "b2", "phash": 0, "dhash": 0, "blank": True},
+            {"path": "gray", "md5": "b3", "phash": 0, "dhash": 0, "blank": True},
+        ]
+        for mode in ("or", "and"):
+            self.assertEqual(group_duplicates(recs, near_mode=mode), [])
+
+    def test_identical_blanks_still_group_as_exact(self):
+        recs = [
+            {"path": "a", "md5": "same", "phash": 0, "dhash": 0, "blank": True},
+            {"path": "b", "md5": "same", "phash": 0, "dhash": 0, "blank": True},
+        ]
+        groups = group_duplicates(recs)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["method"], "exact")
+
+    def test_clean_excludes_solid_images_from_near_groups(self):
+        from vision_cleanse import clean
+        root = self.tmp / "dataset"
+        (root / "train").mkdir(parents=True, exist_ok=True)
+        (root / "val").mkdir(parents=True, exist_ok=True)
+        shutil.copy(self._solid("black.png", 0), root / "train" / "black.png")
+        shutil.copy(self._solid("white.png", 255), root / "val" / "white.png")
+        rep = clean(root, dry_run=True, report_dir=self.tmp / "rep")
+        self.assertEqual(rep["duplicate_groups"], 0)
+        self.assertEqual(rep["blank_images"], 2)

@@ -20,7 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import utils
-from .extractors import dhash, file_hash, image_size, phash
+from .extractors import dhash, file_hash, image_size, is_blank, phash
 from .health import run_health_checks
 from .i18n import normalize_lang
 from .matchers import group_duplicates
@@ -163,11 +163,12 @@ def clean(
             ph, dh = phash(p), dhash(p)
             w, h = image_size(p)
             size = p.stat().st_size
+            blank = is_blank(p)
         except Exception as exc:  # noqa: BLE001 - any unreadable file is corrupt input, not a bug
             unreadable.append(f"{p}: {exc}")
             continue
         rec.update({"md5": md5, "phash": ph, "dhash": dh,
-                    "width": w, "height": h, "size": size})
+                    "width": w, "height": h, "size": size, "blank": blank})
 
     usable = [r for r in records if "md5" in r]
     groups = group_duplicates(usable, phash_threshold, dhash_threshold, near_mode)
@@ -211,6 +212,7 @@ def clean(
         "images_unreadable": unreadable,
         "duplicate_groups": len(groups),
         "near_mode": near_mode,
+        "blank_images": sum(1 for r in usable if r.get("blank")),
         "groups_exact": sum(1 for g in groups if g["method"] == "exact"),
         "groups_near": sum(1 for g in groups if g["method"] == "near"),
         "to_quarantine": len(removals),

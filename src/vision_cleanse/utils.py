@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -309,7 +310,7 @@ def move_to_quarantine(
         # Image dir outside root (data.yaml absolute path): mirror by
         # parent dir + filename instead of failing.
         rel = Path(image_path.parent.name) / image_path.name
-    dest = quarantine_dir / rel
+    dest = _unique_dest(quarantine_dir / rel, image_path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(image_path), str(dest))
     moved = [{"from": str(image_path), "to": str(dest)}]
@@ -320,10 +321,33 @@ def move_to_quarantine(
                 label_dest = quarantine_dir / label_src.relative_to(root)
             except ValueError:
                 label_dest = dest.with_suffix(".txt")
+            label_dest = _unique_dest(label_dest, label_src)
             label_dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(label_src), str(label_dest))
             moved.append({"from": str(label_src), "to": str(label_dest)})
     return {"image": str(image_path), "quarantined_to": str(dest), "moved": moved}
+
+
+def _unique_dest(dest: Path, source: Path) -> Path:
+    """Avoid silently overwriting an existing quarantine file.
+
+    The normal quarantine tree mirrors the path relative to the
+    dataset root, so collisions cannot happen there. The
+    outside-root fallback (``parent/filename``) can collide when
+    two image dirs share a parent name and a filename; the second
+    file used to overwrite the first. Suffix the source path's
+    hash (plus a counter if still taken) instead of overwriting.
+    """
+    if not dest.exists():
+        return dest
+    digest = hashlib.sha1(str(source).encode("utf-8")).hexdigest()[:8]
+    stem, suffix = dest.stem, dest.suffix
+    candidate = dest.with_name(f"{stem}_{digest}{suffix}")
+    i = 2
+    while candidate.exists():
+        candidate = dest.with_name(f"{stem}_{digest}_{i}{suffix}")
+        i += 1
+    return candidate
 
 
 def write_manifest(quarantine_dir: str | Path, entries: list[dict]) -> Path:
@@ -368,17 +392,73 @@ def write_json_report(report_dir: str | Path, report: dict) -> Path:
     return out
 
 
+def _coco_matches(file_name: str, removed: Path, basename_counts: dict[str, int]) -> bool:
+    """Whether a COCO ``file_name`` entry refers to the removed image.
+
+    Matching is path-aware, because plain basename comparison is
+    wrong in both directions:
+
+    - Directory-prefixed names (``"train/a.jpg"``) never equal a
+      bare basename, so the old code silently removed nothing.
+    - Bare names shared by two splits (``"a.jpg"`` in train and
+      val) matched both, so the old code deleted the innocent
+      split's annotations too.
+
+    Rules: the basename must match, and then either the COCO path
+    is a suffix of the removed path (same relative layout under a
+    possibly renamed root), or its immediate parent directory
+    matches the removed image's parent directory (same split
+    name). A bare name only matches when it is unique across the
+    whole COCO file; ambiguous bare names are left alone and
+    reported as warnings by the caller.
+    """
+    name = Path(file_name).name
+    if name != removed.name:
+        return False
+    parts = Path(file_name).parts
+    if len(parts) == 1:
+        return basename_counts.get(name, 0) == 1
+    normalized = file_name.replace("\\", "/")
+    if str(removed).replace("\\", "/").endswith("/" + normalized):
+        return True
+    return len(parts) >= 2 and parts[-2] == removed.parent.name
+
+
 def sync_coco(coco_path: str | Path, removed_image_paths: list[str | Path], output_path: str | Path) -> dict:
     """Return a COCO dict with removed images (and their annotations) dropped.
 
     ``removed_image_paths`` are matched against COCO ``file_name``
-    by basename, because COCO files usually store bare filenames.
-    The original file is never overwritten: the cleaned copy goes to
-    ``output_path``.
+    with :func:`_coco_matches` (path-aware, not bare-basename).
+    COCO entries whose bare name is shared by several images and
+    carries no directory information cannot be attributed to one
+    split, so they are kept and listed in ``warnings`` instead of
+    being deleted on a guess. The original file is never
+    overwritten: the cleaned copy goes to ``output_path``.
     """
     coco = json.loads(Path(coco_path).read_text(encoding="utf-8"))
-    removed_names = {Path(p).name for p in removed_image_paths}
-    kept_images = [im for im in coco.get("images", []) if im.get("file_name") not in removed_names]
+    images = coco.get("images", [])
+    basename_counts: dict[str, int] = {}
+    for im in images:
+        basename_counts[Path(im.get("file_name") or "").name] = (
+            basename_counts.get(Path(im.get("file_name") or "").name, 0) + 1
+        )
+    removed = [Path(p) for p in removed_image_paths]
+    warnings: list[str] = []
+    for r in removed:
+        if basename_counts.get(r.name, 0) > 1 and not any(
+            len(Path(im.get("file_name") or "").parts) > 1
+            and Path(im.get("file_name") or "").name == r.name
+            for im in images
+        ):
+            warnings.append(
+                f"basename {r.name!r} matches {basename_counts[r.name]} COCO images "
+                "with no directory information; kept (ambiguous)"
+            )
+    drop_ids = set()
+    for im in images:
+        if any(_coco_matches(im.get("file_name") or "", r, basename_counts) for r in removed):
+            drop_ids.add(im["id"])
+    kept_images = [im for im in images if im["id"] not in drop_ids]
     kept_ids = {im["id"] for im in kept_images}
     kept_anns = [a for a in coco.get("annotations", []) if a.get("image_id") in kept_ids]
     cleaned = dict(coco)
@@ -387,9 +467,10 @@ def sync_coco(coco_path: str | Path, removed_image_paths: list[str | Path], outp
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     Path(output_path).write_text(json.dumps(cleaned, indent=2, ensure_ascii=False), encoding="utf-8")
     return {
-        "images_before": len(coco.get("images", [])),
+        "images_before": len(images),
         "images_after": len(kept_images),
         "annotations_before": len(coco.get("annotations", [])),
         "annotations_after": len(kept_anns),
         "output": str(output_path),
+        "warnings": warnings,
     }

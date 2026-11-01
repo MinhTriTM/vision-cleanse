@@ -82,6 +82,12 @@ def group_duplicates(
     ``near_mode`` selects the near rule: ``"or"`` (default) groups
     a pair when either hash is within threshold; ``"and"`` requires
     both. Anything else raises :class:`ValueError`.
+
+    Blank records (see :func:`vision_cleanse.extractors.is_blank`)
+    never form near edges: a solid image has no structure for the
+    hashes to read (dHash is always 0, pHash is float noise), so
+    near-grouping blanks together proves nothing. Byte-identical
+    blanks still group through the exact edge.
     """
     if near_mode not in ("or", "and"):
         raise ValueError(f"unknown near_mode: {near_mode!r} (expected 'or' or 'and')")
@@ -92,6 +98,8 @@ def group_duplicates(
             dp = hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
             dd = hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
             near = (dp or dd) if near_mode == "or" else (dp and dd)
+            if records[i].get("blank") or records[j].get("blank"):
+                near = False
             if records[i]["md5"] == records[j]["md5"] or near:
                 uf.union(i, j)
     out = []

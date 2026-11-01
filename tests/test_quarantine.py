@@ -57,3 +57,28 @@ class TestQuarantine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOutsideRootQuarantine(unittest.TestCase):
+    """Outside-root fallback must never overwrite (0.2.3)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def test_same_parent_name_and_filename_both_survive(self):
+        from vision_cleanse.utils import move_to_quarantine
+        qdir = self.tmp / "quarantine"
+        entries = []
+        for side in ("x", "y"):
+            p = self.tmp / side / "train"
+            p.mkdir(parents=True, exist_ok=True)
+            (p / "img.jpg").write_bytes(b"DATA-" + side.encode())
+            entries.append(move_to_quarantine(
+                p / "img.jpg", self.tmp / "root", qdir))
+        dests = [e["quarantined_to"] for e in entries]
+        self.assertEqual(len(set(dests)), 2)
+        contents = sorted(Path(d).read_bytes() for d in dests)
+        self.assertEqual(contents, [b"DATA-x", b"DATA-y"])

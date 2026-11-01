@@ -115,3 +115,50 @@ class TestCli(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCocoPathMatching(unittest.TestCase):
+    """Path-aware COCO sync (0.2.3): prefixed names and bare duplicates."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _run(self, images, removed):
+        coco = self.tmp / "c.json"
+        anns = []
+        for im in images:
+            anns.append({"id": 100 + im["id"], "image_id": im["id"]})
+        coco.write_text(json.dumps({"images": images, "annotations": anns}),
+                        encoding="utf-8")
+        out = self.tmp / "c_clean.json"
+        from vision_cleanse.utils import sync_coco
+        result = sync_coco(coco, removed, out)
+        cleaned = json.loads(out.read_text(encoding="utf-8"))
+        return result, cleaned
+
+    def test_prefixed_names_match_by_path_not_basename(self):
+        images = [{"id": 1, "file_name": "train/a.jpg"},
+                  {"id": 2, "file_name": "val/a.jpg"}]
+        result, cleaned = self._run(images, ["/data/train/a.jpg"])
+        self.assertEqual([im["file_name"] for im in cleaned["images"]],
+                         ["val/a.jpg"])
+        self.assertEqual([a["image_id"] for a in cleaned["annotations"]], [2])
+        self.assertEqual(result["warnings"], [])
+
+    def test_renamed_root_still_matches_via_suffix(self):
+        images = [{"id": 1, "file_name": "images/train/a.jpg"},
+                  {"id": 2, "file_name": "images/val/a.jpg"}]
+        _, cleaned = self._run(images, ["/mnt/other/images/train/a.jpg"])
+        self.assertEqual([im["file_name"] for im in cleaned["images"]],
+                         ["images/val/a.jpg"])
+
+    def test_bare_duplicate_names_are_kept_with_warning(self):
+        images = [{"id": 1, "file_name": "a.jpg"},
+                  {"id": 2, "file_name": "a.jpg"}]
+        result, cleaned = self._run(images, ["/data/train/a.jpg"])
+        self.assertEqual(len(cleaned["images"]), 2)
+        self.assertEqual(len(cleaned["annotations"]), 2)
+        self.assertEqual(len(result["warnings"]), 1)
