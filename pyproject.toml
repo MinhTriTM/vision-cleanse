@@ -1,23 +1,29 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "vision-cleanse"
-version = "0.2.4"
-description = "Clean near-duplicates and train/val/test leakage from computer vision datasets"
+version = "0.3.0"
+description = "Clean near-duplicates and train/val/test leakage from computer vision datasets (pHash, dHash, label conflicts & YOLO/COCO sync)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "VisionCleanse Contributors" }]
-keywords = ["computer-vision", "dataset", "deduplication", "data-leakage", "phash", "dhash"]
+authors = [
+    { name = "MinhTriTM", email = "developer@hanhchinhcong.gov.vn" }
+]
+keywords = ["computer-vision", "dataset", "deduplication", "data-leakage", "phash", "dhash", "yolo", "coco"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
     "Pillow>=9.1",
@@ -25,9 +31,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = []
+dev = [
+    "pytest>=7.0.0",
+    "build",
+    "wheel",
+]
 docs = ["mkdocs>=1.6", "mkdocs-material>=9"]
 charts = ["weasyprint>=70"]
+
+[project.urls]
+Homepage = "https://github.com/MinhTriTM/vision-cleanse"
+Repository = "https://github.com/MinhTriTM/vision-cleanse.git"
+Issues = "https://github.com/MinhTriTM/vision-cleanse/issues"
 
 [tool.ruff]
 target-version = "py310"
@@ -40,3 +55,7 @@ vision-cleanse = "vision_cleanse.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
