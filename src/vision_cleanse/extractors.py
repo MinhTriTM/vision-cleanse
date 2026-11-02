@@ -118,5 +118,3 @@ def is_blank(path: str | Path) -> bool:
     """
     pixels = _grayscale_pixels(path, (32, 32))
     return float(pixels.std()) < 1.0
-    """Render an integer hash as a zero-padded hex string."""
-    return format(value, f"0{bits // 4}x")
