@@ -1,6 +1,6 @@
 # VisionCleanse
 
-![VisionCleanse 主视觉图 — 杂乱照片经重复检测后整理入文件夹，重复照片进入隔离区](docs/assets/illustrations/hero_banner.png)
+![VisionCleanse 主视觉图 — 杂乱照片经重复检测后整理入文件夹，重复照片进入隔离区](assets/banner.png)
 
 [![PyPI version](https://img.shields.io/pypi/v/vision-cleanse.svg)](https://pypi.org/project/vision-cleanse/)
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)

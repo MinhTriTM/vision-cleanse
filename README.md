@@ -1,6 +1,6 @@
 # VisionCleanse
 
-![VisionCleanse — ảnh lộn xộn được soi trùng lặp rồi xếp gọn vào thư mục, ảnh trùng vào quarantine](docs/assets/illustrations/hero_banner.png)
+![VisionCleanse — ảnh lộn xộn được soi trùng lặp rồi xếp gọn vào thư mục, ảnh trùng vào quarantine](assets/banner.png)
 
 [![PyPI version](https://img.shields.io/pypi/v/vision-cleanse.svg)](https://pypi.org/project/vision-cleanse/)
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
