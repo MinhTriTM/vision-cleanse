@@ -2,11 +2,12 @@
 
 ![VisionCleanse 主视觉图 — 杂乱照片经重复检测后整理入文件夹，重复照片进入隔离区](docs/assets/illustrations/hero_banner.png)
 
+[![PyPI version](https://img.shields.io/pypi/v/vision-cleanse.svg)](https://pypi.org/project/vision-cleanse/)
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-当前版本：**0.2.4**。([Tiếng Việt](README.md) · [English](README.en.md))
+当前版本：**0.3.0**。([Tiếng Việt](README.md) · [English](README.en.md))
 
 清理计算机视觉数据集：检测近似重复图片，防止训练集 / 验证集 / 测试集之间的数据泄漏。
 

@@ -2,11 +2,12 @@
 
 ![VisionCleanse hero illustration — messy photos inspected for duplicates, then organized into folders with duplicates quarantined](docs/assets/illustrations/hero_banner.png)
 
+[![PyPI version](https://img.shields.io/pypi/v/vision-cleanse.svg)](https://pypi.org/project/vision-cleanse/)
 [![CI](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml/badge.svg)](https://github.com/MinhTriTM/vision-cleanse/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Current version: **0.2.4**. ([Tiếng Việt](README.md) · [中文](README.zh.md))
+Current version: **0.3.0**. ([Tiếng Việt](README.md) · [中文](README.zh.md))
 
 Clean computer vision datasets: detect near-duplicates and prevent
 data leakage between Train / Val / Test.
