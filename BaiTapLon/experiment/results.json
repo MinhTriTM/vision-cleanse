@@ -1,0 +1,121 @@
+[
+ {
+  "variant": "Gốc (đối chiếu)",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 0,
+  "energy_ratio": 1.0
+ },
+ {
+  "variant": "Thu nhỏ 50% rồi phóng lại",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 0,
+  "energy_ratio": 0.91
+ },
+ {
+  "variant": "Nén JPEG quality=40",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 0,
+  "energy_ratio": 0.978
+ },
+ {
+  "variant": "Tăng sáng +50",
+  "phash": 4,
+  "dhash": 3,
+  "edge": 6,
+  "energy_ratio": 0.916
+ },
+ {
+  "variant": "Giảm sáng -50",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 0,
+  "energy_ratio": 0.501
+ },
+ {
+  "variant": "Tương phản thấp 0.3",
+  "phash": 2,
+  "dhash": 0,
+  "edge": 2,
+  "energy_ratio": 0.304
+ },
+ {
+  "variant": "Tương phản cao 1.8",
+  "phash": 4,
+  "dhash": 2,
+  "edge": 4,
+  "energy_ratio": 1.302
+ },
+ {
+  "variant": "Gamma 0.5",
+  "phash": 2,
+  "dhash": 1,
+  "edge": 2,
+  "energy_ratio": 0.708
+ },
+ {
+  "variant": "Gamma 2.0",
+  "phash": 6,
+  "dhash": 6,
+  "edge": 8,
+  "energy_ratio": 1.191
+ },
+ {
+  "variant": "Âm bản (invert)",
+  "phash": 62,
+  "dhash": 64,
+  "edge": 0,
+  "energy_ratio": 1.0
+ },
+ {
+  "variant": "Làm mờ Gaussian r=2",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 2,
+  "energy_ratio": 0.58
+ },
+ {
+  "variant": "Làm nét (sharpen)",
+  "phash": 2,
+  "dhash": 0,
+  "edge": 4,
+  "energy_ratio": 1.424
+ },
+ {
+  "variant": "Crop 10% mỗi cạnh",
+  "phash": 24,
+  "dhash": 15,
+  "edge": 14,
+  "energy_ratio": 1.124
+ },
+ {
+  "variant": "Crop 25% mỗi cạnh",
+  "phash": 36,
+  "dhash": 35,
+  "edge": 28,
+  "energy_ratio": 1.141
+ },
+ {
+  "variant": "Lật ngang",
+  "phash": 32,
+  "dhash": 44,
+  "edge": 32,
+  "energy_ratio": 1.0
+ },
+ {
+  "variant": "Nhiễu Gaussian sigma=12",
+  "phash": 0,
+  "dhash": 0,
+  "edge": 0,
+  "energy_ratio": 1.041
+ },
+ {
+  "variant": "Ảnh khác (không trùng)",
+  "phash": 26,
+  "dhash": 20,
+  "edge": 22,
+  "energy_ratio": 1.17
+ }
+]
