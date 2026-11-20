@@ -26,6 +26,17 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Max pHash Hamming distance for a near-duplicate pair (default 10)")
     p.add_argument("--dhash-threshold", type=int, default=10,
                    help="Max dHash Hamming distance for a near-duplicate pair (default 10)")
+    p.add_argument("--sobel-verify", action="store_true",
+                   help="Verify near-duplicate pairs with a Sobel edge hash "
+                        "(ring 2.5): when both images have real edge "
+                        "structure, the pair groups iff the edge hashes "
+                        "agree within --sobel-threshold -- this rescues "
+                        "tone-changed duplicates pHash/dHash miss and "
+                        "vetoes similar-composition false positives; "
+                        "off by default")
+    p.add_argument("--sobel-threshold", type=int, default=10,
+                   help="Max Sobel edge-hash Hamming distance when "
+                        "--sobel-verify is on (default 10)")
     p.add_argument("--near-mode", default="or", choices=["or", "and"],
                    help="Near-duplicate rule: 'or' groups a pair when either hash is within "
                         "threshold (default); 'and' requires both (stricter, fewer false "
@@ -86,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
             min_size=args.min_size,
             yolo=True if args.yolo else None,
             charts_dir=charts_dir,
+            sobel_verify=args.sobel_verify,
+            sobel_threshold=args.sobel_threshold,
         )
     except Exception as exc:
         from .charts import ChartsUnavailableError

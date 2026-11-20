@@ -70,6 +70,7 @@ def group_duplicates(
     phash_threshold: int = 10,
     dhash_threshold: int = 10,
     near_mode: str = "or",
+    edge_threshold: int | None = None,
 ) -> list[dict]:
     """Group records that are exact or near duplicates.
 
@@ -82,6 +83,20 @@ def group_duplicates(
     ``near_mode`` selects the near rule: ``"or"`` (default) groups
     a pair when either hash is within threshold; ``"and"`` requires
     both. Anything else raises :class:`ValueError`.
+
+    ``edge_threshold`` (ring 2.5, opt-in) makes the Sobel edge hash
+    decide near-duplicate pairs *when it has something to say*:
+    both records carry ``"edge_hash"`` and neither is 0. Then the
+    pair groups iff the edge hashes agree within threshold --
+    which both rescues pairs pHash/dHash miss (e.g. an inverted
+    image: pHash distance 62, dHash 64, edge 0 on the photo
+    fixture) and vetoes pairs pHash/dHash would wrongly group
+    (similar composition, different structure). When the edge
+    hash is missing or 0 -- 0 means "no edge structure at all"
+    (a linear gradient or a regular checkerboard has a uniform
+    edge map), so it carries no information -- the old pHash/dHash
+    rule applies unchanged, just like a blank image. Exact (MD5)
+    pairs are never affected.
 
     Blank records (see :func:`vision_cleanse.extractors.is_blank`)
     never form near edges: a solid image has no structure for the
@@ -98,6 +113,11 @@ def group_duplicates(
             dp = hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
             dd = hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
             near = (dp or dd) if near_mode == "or" else (dp and dd)
+            if edge_threshold is not None:
+                ei, ej = records[i].get("edge_hash"), records[j].get("edge_hash")
+                if ei is not None and ej is not None and ei != 0 and ej != 0:
+                    # Informative edge hash decides: rescue + veto.
+                    near = hamming(ei, ej) <= edge_threshold
             if records[i].get("blank") or records[j].get("blank"):
                 near = False
             if records[i]["md5"] == records[j]["md5"] or near:

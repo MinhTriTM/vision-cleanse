@@ -20,7 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import utils
-from .extractors import dhash, file_hash, image_size, is_blank, phash
+from .extractors import dhash, edge_hash, file_hash, image_size, is_blank, phash
 from .health import run_health_checks
 from .i18n import normalize_lang
 from .matchers import group_duplicates
@@ -107,6 +107,8 @@ def clean(
     min_size: int = 32,
     yolo: bool | None = None,
     charts_dir: str | Path | None = None,
+    sobel_verify: bool = False,
+    sobel_threshold: int = 10,
 ) -> dict:
     """Run the MVP pipeline over ``root`` and return a report dict.
 
@@ -161,6 +163,7 @@ def clean(
             # into grouping (that was a real KeyError bug).
             md5 = file_hash(p, hash_algo)
             ph, dh = phash(p), dhash(p)
+            eh = edge_hash(p) if sobel_verify else None
             w, h = image_size(p)
             size = p.stat().st_size
             blank = is_blank(p)
@@ -169,9 +172,14 @@ def clean(
             continue
         rec.update({"md5": md5, "phash": ph, "dhash": dh,
                     "width": w, "height": h, "size": size, "blank": blank})
+        if eh is not None:
+            rec["edge_hash"] = eh
 
     usable = [r for r in records if "md5" in r]
-    groups = group_duplicates(usable, phash_threshold, dhash_threshold, near_mode)
+    groups = group_duplicates(
+        usable, phash_threshold, dhash_threshold, near_mode,
+        edge_threshold=sobel_threshold if sobel_verify else None,
+    )
     # group_duplicates indexes into ``usable``; resolve against it.
     resolved = [resolve_group(i, g, usable) for i, g in enumerate(groups)]
     # Full member list per group (kept + removed) for the Venn chart:
@@ -212,6 +220,8 @@ def clean(
         "images_unreadable": unreadable,
         "duplicate_groups": len(groups),
         "near_mode": near_mode,
+        "sobel_verify": sobel_verify,
+        "sobel_threshold": sobel_threshold if sobel_verify else None,
         "blank_images": sum(1 for r in usable if r.get("blank")),
         "groups_exact": sum(1 for g in groups if g["method"] == "exact"),
         "groups_near": sum(1 for g in groups if g["method"] == "near"),
