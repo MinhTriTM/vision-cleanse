@@ -1,0 +1,129 @@
+"""Matchers for VisionCleanse MVP: exact and near-duplicate grouping.
+
+Near-duplicate grouping is pairwise (O(n^2)) in the MVP. That is
+fine for small-to-medium datasets and for the test suite; a vector
+index (FAISS) replaces it in a later ring.
+
+A pair is grouped when *either* perceptual hash is within
+threshold. The two hashes are complementary, not redundant:
+dHash reads horizontal gradient signs and proved extremely stable
+under JPEG noise (distance 0 even at quality 30, including on
+smooth images where pHash drifts to 16); pHash reads global
+low-frequency structure and catches changes dHash is blind to
+(dHash only compares left-right neighbours). Requiring both
+(AND) would systematically miss heavily compressed smooth images,
+so the MVP uses OR and relies on quarantine + reporting --
+never silent deletion -- to absorb the looser rule. A geometric
+verification ring (SIFT + RANSAC) tightens this later.
+
+Since 0.2.2, :func:`group_duplicates` accepts ``near_mode``:
+``"or"`` (default, as above) or ``"and"`` (both hashes must be
+within threshold). ``"and"`` removes the borderline single-hash
+collisions seen on similar-composition photo sets -- pairs that
+touch the threshold on one hash while the other disagrees
+strongly -- at the cost of the recall loss described above.
+Pick per dataset; :func:`vision_cleanse.core.clean` records the
+mode in ``report["near_mode"]``.
+"""
+
+from __future__ import annotations
+
+
+def hamming(a: int, b: int) -> int:
+    """Hamming distance between two integer hashes."""
+    return (a ^ b).bit_count()  # Python 3.10+; falls back below on old versions
+
+
+try:
+    (0).bit_count()
+except AttributeError:  # pragma: no cover - Python < 3.10 fallback
+    def hamming(a: int, b: int) -> int:  # type: ignore[no-redef]
+        return bin(a ^ b).count("1")  # noqa: FURB161 - fallback for Python < 3.10 without int.bit_count()
+
+
+class UnionFind:
+    """Minimal union-find used to merge exact and near-duplicate edges."""
+
+    def __init__(self, n: int) -> None:
+        self.parent = list(range(n))
+
+    def find(self, x: int) -> int:
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]
+            x = self.parent[x]
+        return x
+
+    def union(self, a: int, b: int) -> None:
+        ra, rb = self.find(a), self.find(b)
+        if ra != rb:
+            self.parent[rb] = ra
+
+    def groups(self) -> list[list[int]]:
+        buckets: dict[int, list[int]] = {}
+        for i in range(len(self.parent)):
+            buckets.setdefault(self.find(i), []).append(i)
+        return [g for g in buckets.values() if len(g) > 1]
+
+
+def group_duplicates(
+    records: list[dict],
+    phash_threshold: int = 10,
+    dhash_threshold: int = 10,
+    near_mode: str = "or",
+    edge_threshold: int | None = None,
+) -> list[dict]:
+    """Group records that are exact or near duplicates.
+
+    Each record must carry ``md5``, ``phash`` and ``dhash`` keys
+    (see :mod:`vision_cleanse.extractors`). Returns a list of
+    ``{"members": [...], "method": "exact" | "near"}`` dicts, where
+    ``members`` are the record indices. ``method`` is ``"exact"``
+    only when every member shares one MD5; otherwise ``"near"``.
+
+    ``near_mode`` selects the near rule: ``"or"`` (default) groups
+    a pair when either hash is within threshold; ``"and"`` requires
+    both. Anything else raises :class:`ValueError`.
+
+    ``edge_threshold`` (ring 2.5, opt-in) makes the Sobel edge hash
+    decide near-duplicate pairs *when it has something to say*:
+    both records carry ``"edge_hash"`` and neither is 0. Then the
+    pair groups iff the edge hashes agree within threshold --
+    which both rescues pairs pHash/dHash miss (e.g. an inverted
+    image: pHash distance 62, dHash 64, edge 0 on the photo
+    fixture) and vetoes pairs pHash/dHash would wrongly group
+    (similar composition, different structure). When the edge
+    hash is missing or 0 -- 0 means "no edge structure at all"
+    (a linear gradient or a regular checkerboard has a uniform
+    edge map), so it carries no information -- the old pHash/dHash
+    rule applies unchanged, just like a blank image. Exact (MD5)
+    pairs are never affected.
+
+    Blank records (see :func:`vision_cleanse.extractors.is_blank`)
+    never form near edges: a solid image has no structure for the
+    hashes to read (dHash is always 0, pHash is float noise), so
+    near-grouping blanks together proves nothing. Byte-identical
+    blanks still group through the exact edge.
+    """
+    if near_mode not in ("or", "and"):
+        raise ValueError(f"unknown near_mode: {near_mode!r} (expected 'or' or 'and')")
+    n = len(records)
+    uf = UnionFind(n)
+    for i in range(n):
+        for j in range(i + 1, n):
+            dp = hamming(records[i]["phash"], records[j]["phash"]) <= phash_threshold
+            dd = hamming(records[i]["dhash"], records[j]["dhash"]) <= dhash_threshold
+            near = (dp or dd) if near_mode == "or" else (dp and dd)
+            if edge_threshold is not None:
+                ei, ej = records[i].get("edge_hash"), records[j].get("edge_hash")
+                if ei is not None and ej is not None and ei != 0 and ej != 0:
+                    # Informative edge hash decides: rescue + veto.
+                    near = hamming(ei, ej) <= edge_threshold
+            if records[i].get("blank") or records[j].get("blank"):
+                near = False
+            if records[i]["md5"] == records[j]["md5"] or near:
+                uf.union(i, j)
+    out = []
+    for members in uf.groups():
+        md5s = {records[i]["md5"] for i in members}
+        out.append({"members": members, "method": "exact" if len(md5s) == 1 else "near"})
+    return out

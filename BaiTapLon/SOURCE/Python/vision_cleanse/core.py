@@ -1,0 +1,282 @@
+"""Core engine: run rings 1-2, resolve conflicts, quarantine.
+
+Safety contract (read this before using ``apply`` mode):
+
+* Dry-run is the default: nothing moves unless ``dry_run=False``.
+* Removal never deletes: files are *moved* to a quarantine tree
+  that mirrors the dataset layout, with ``manifest.json`` so every
+  move is reversible.
+* Label conflicts are never auto-resolved: the whole group is kept
+  and written to ``conflict_report.csv`` for human review.
+* Split priority protects evaluation data: ``test > val > train``.
+  A duplicate found in test and train is kept in test.
+* Within one split, the keeper is deterministic: highest
+  resolution, then largest file, then lexicographically smallest
+  path. Re-running gives the same result.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from . import utils
+from .extractors import dhash, edge_hash, file_hash, image_size, is_blank, phash
+from .health import run_health_checks
+from .i18n import normalize_lang
+from .matchers import group_duplicates
+
+# Lower rank = higher priority (kept first).
+SPLIT_PRIORITY = {"test": 0, "val": 1, "validation": 1, "train": 2, "training": 2}
+
+
+def _split_rank(split: str) -> int:
+    return SPLIT_PRIORITY.get(split, 3)
+
+
+def _keeper_key(rec: dict) -> tuple:
+    """Sort key for choosing the keeper: smaller wins."""
+    w, h = rec.get("width", 0), rec.get("height", 0)
+    return (_split_rank(rec["split"]), -(w * h), -rec.get("size", 0), str(rec["path"]))
+
+
+def resolve_group(group_id: int, group: dict, records: list[dict]) -> dict:
+    """Resolve one duplicate group into kept / removed / conflict.
+
+    Returns ``{"group_id", "method", "kept", "removed", "conflict"}``
+    where ``kept``/``removed`` are record dicts and ``conflict`` is
+    a conflict-report row (or ``None``).
+    """
+    members = [records[i] for i in group["members"]]
+    # Conflict = same (near-)duplicate content annotated differently.
+    # ``classes`` is the folder label in classic mode, or the sorted
+    # class-id tuple from the YOLO .txt file in YOLO mode. Members
+    # without any class never create a conflict on their own.
+    class_sets = {m["classes"] for m in members if m.get("classes")}
+    if len(class_sets) > 1:
+        return {
+            "group_id": group_id,
+            "method": group["method"],
+            "kept": members,
+            "removed": [],
+            "conflict": {
+                "group_id": group_id,
+                "method": group["method"],
+                "labels": sorted({m["label"] for m in members if m["label"]}),
+                "splits": sorted({m["split"] for m in members}),
+                "files": [str(m["path"]) for m in members],
+            },
+        }
+    ordered = sorted(members, key=_keeper_key)
+    kept, removed = ordered[0], ordered[1:]
+    return {
+        "group_id": group_id,
+        "method": group["method"],
+        "kept": [kept],
+        "removed": [
+            {
+                "path": str(m["path"]),
+                "split": m["split"],
+                "label": m["label"],
+                "label_path": str(m["label_path"]) if m.get("label_path") else None,
+                "kept_path": str(kept["path"]),
+                "reason": (
+                    "duplicate_in_lower_priority_split"
+                    if m["split"] != kept["split"]
+                    else "duplicate_within_same_split"
+                ),
+            }
+            for m in removed
+        ],
+        "conflict": None,
+    }
+
+
+def clean(
+    root: str | Path,
+    splits: tuple[str, ...] = ("train", "val", "test"),
+    phash_threshold: int = 10,
+    dhash_threshold: int = 10,
+    hash_algo: str = "md5",
+    near_mode: str = "or",
+    dry_run: bool = True,
+    quarantine_dir: str | Path | None = None,
+    report_dir: str | Path | None = None,
+    coco_path: str | Path | None = None,
+    coco_output: str | Path | None = None,
+    lang: str = "vi",
+    min_size: int = 32,
+    yolo: bool | None = None,
+    charts_dir: str | Path | None = None,
+    sobel_verify: bool = False,
+    sobel_threshold: int = 10,
+) -> dict:
+    """Run the MVP pipeline over ``root`` and return a report dict.
+
+    Parameters
+    ----------
+    root: dataset root. Two layouts are supported (auto-detected):
+        classic ``<split>/[<class>/]<image>`` with ``.txt`` labels
+        next to the images, or YOLO ``images/<split>/`` +
+        ``labels/<split>/`` + optional ``data.yaml`` (class names
+        come from ``names`` when present).
+    splits: split names to scan (missing ones are skipped).
+    phash_threshold, dhash_threshold: max Hamming distance for a
+        near-duplicate pair (either hash within threshold groups
+        the pair -- see matchers.py for why OR, not AND).
+    near_mode: "or" (default) or "and" (both hashes within
+        threshold). "and" is stricter: it removes borderline
+        single-hash collisions on similar-composition photo sets,
+        at the cost of missing heavily compressed smooth pairs
+        that OR catches. Recorded in report["near_mode"].
+    dry_run: when True (default) nothing moves; the report only
+        lists what *would* be quarantined.
+    quarantine_dir: where removed files are moved in apply mode.
+        Defaults to ``<root>_quarantine`` (a sibling of root).
+    report_dir: if given, ``report.json`` and ``conflict_report.csv``
+        are written there.
+    coco_path / coco_output: optional COCO annotation file to sync.
+        The original is never overwritten; the cleaned copy goes to
+        ``coco_output`` (default ``<coco_path>.cleaned.json``).
+        In dry-run mode the sync is only counted, not written.
+    lang: message language for the CLI summary (``vi`` / ``en`` /
+        ``zh``). Report JSON keys always stay in English.
+    min_size: images whose longest side is below this are flagged
+        as ``tiny`` by the health checks (default 32 px).
+    yolo: force YOLO annotation checks on (True) or off (False).
+        Default (None) auto-enables them when any ``.txt`` label
+        file is found under the scanned splits.
+    charts_dir: if given, PNG charts are written there (see
+        charts.py) and listed in ``report["charts"]``. Requires the
+        ``charts`` extra (weasyprint + pdftoppm); otherwise a
+        ``ChartsUnavailableError`` is raised.
+    """
+    root = Path(root)
+    records, missing, layout = utils.discover(root, list(splits))
+
+    # --- Feature extraction (rings 1 + 2) ---
+    unreadable: list[str] = []
+    for rec in records:
+        p = Path(rec["path"])
+        try:
+            # Compute into locals first: on failure nothing is
+            # assigned, so a half-hashed record can never leak
+            # into grouping (that was a real KeyError bug).
+            md5 = file_hash(p, hash_algo)
+            ph, dh = phash(p), dhash(p)
+            eh = edge_hash(p) if sobel_verify else None
+            w, h = image_size(p)
+            size = p.stat().st_size
+            blank = is_blank(p)
+        except Exception as exc:  # noqa: BLE001 - any unreadable file is corrupt input, not a bug
+            unreadable.append(f"{p}: {exc}")
+            continue
+        rec.update({"md5": md5, "phash": ph, "dhash": dh,
+                    "width": w, "height": h, "size": size, "blank": blank})
+        if eh is not None:
+            rec["edge_hash"] = eh
+
+    usable = [r for r in records if "md5" in r]
+    groups = group_duplicates(
+        usable, phash_threshold, dhash_threshold, near_mode,
+        edge_threshold=sobel_threshold if sobel_verify else None,
+    )
+    # group_duplicates indexes into ``usable``; resolve against it.
+    resolved = [resolve_group(i, g, usable) for i, g in enumerate(groups)]
+    # Full member list per group (kept + removed) for the Venn chart:
+    # kept entries are full records, removed entries are small dicts.
+    duplicate_groups_detail = [
+        {
+            "group_id": r["group_id"],
+            "method": r["method"],
+            "members": (
+                [{"path": str(k["path"]), "split": k["split"]} for k in r["kept"]]
+                + [{"path": x["path"], "split": x["split"]} for x in r["removed"]]
+            ),
+        }
+        for r in resolved
+    ]
+    conflicts = [r["conflict"] for r in resolved if r["conflict"] is not None]
+    removals = [x for r in resolved for x in r["removed"]]
+    kept_paths = {str(r["kept"][0]["path"]) for r in resolved}
+    scanned_splits = [s for s in splits if s not in missing]
+    health = run_health_checks(
+        root, records, resolved, scanned_splits, min_size=min_size, yolo=yolo,
+        layout=layout,
+    )
+
+    report: dict = {
+        "root": str(root),
+        "lang": normalize_lang(lang),
+        "layout": {
+            "mode": layout["mode"],
+            "data_yaml": layout["data_yaml"],
+            "names": layout["names"],
+        },
+        "clean": health["clean"],
+        "health": health,
+        "splits_scanned": scanned_splits,
+        "splits_missing": missing,
+        "images_found": len(records),
+        "images_unreadable": unreadable,
+        "duplicate_groups": len(groups),
+        "near_mode": near_mode,
+        "sobel_verify": sobel_verify,
+        "sobel_threshold": sobel_threshold if sobel_verify else None,
+        "blank_images": sum(1 for r in usable if r.get("blank")),
+        "groups_exact": sum(1 for g in groups if g["method"] == "exact"),
+        "groups_near": sum(1 for g in groups if g["method"] == "near"),
+        "to_quarantine": len(removals),
+        "label_conflicts": len(conflicts),
+        "dry_run": dry_run,
+        "groups": [
+            {
+                "group_id": r["group_id"],
+                "method": r["method"],
+                "kept": [str(k["path"]) for k in r["kept"]],
+                "removed": [x["path"] for x in r["removed"]],
+                "conflict": r["conflict"] is not None,
+            }
+            for r in resolved
+        ],
+        "removals": removals,
+        "conflicts": conflicts,
+        "duplicate_groups_detail": duplicate_groups_detail,
+        "kept_sample": sorted(kept_paths)[:10],
+    }
+
+    # --- Charts (before reports are written, so report.json lists them) ---
+    if charts_dir is not None:
+        from .charts import generate_charts
+
+        report["charts"] = generate_charts(report, records, charts_dir)
+
+    # --- Side effects (apply mode only, except reports) ---
+    if report_dir is not None:
+        from .html_report import write_html_report
+
+        report["html_report"] = str(write_html_report(report_dir, report, records))
+        utils.write_json_report(report_dir, report)
+        if conflicts:
+            utils.write_conflict_report(report_dir, conflicts)
+
+    removed_paths = [r["path"] for r in removals]
+    if coco_path is not None:
+        out = Path(coco_output) if coco_output else Path(str(coco_path) + ".cleaned.json")
+        if dry_run:
+            report["coco_sync"] = {"planned_output": str(out), "would_remove_images": len(removed_paths)}
+        else:
+            report["coco_sync"] = utils.sync_coco(coco_path, removed_paths, out)
+
+    if not dry_run:
+        qdir = Path(quarantine_dir) if quarantine_dir else Path(str(root) + "_quarantine")
+        manifest = []
+        for r in removals:
+            entry = utils.move_to_quarantine(
+                r["path"], root, qdir, label_path=r.get("label_path")
+            )
+            entry.update({"reason": r["reason"], "kept_path": r["kept_path"]})
+            manifest.append(entry)
+        report["quarantine_dir"] = str(qdir)
+        report["manifest"] = str(utils.write_manifest(qdir, manifest))
+
+    return report

@@ -1,0 +1,161 @@
+"""Command-line interface: ``vision-cleanse``.
+
+Dry-run is the default. Pass ``--apply`` to actually move files
+to quarantine. Nothing is ever hard-deleted.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+
+from .core import clean
+from .i18n import SUPPORTED, normalize_lang, t
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="vision-cleanse",
+        description="Clean near-duplicates and train/val/test leakage from an image dataset.",
+    )
+    p.add_argument("root", help="Dataset root containing <split>/ subdirectories")
+    p.add_argument("--splits", nargs="+", default=["train", "val", "test"],
+                   help="Split names to scan (default: train val test)")
+    p.add_argument("--phash-threshold", type=int, default=10,
+                   help="Max pHash Hamming distance for a near-duplicate pair (default 10)")
+    p.add_argument("--dhash-threshold", type=int, default=10,
+                   help="Max dHash Hamming distance for a near-duplicate pair (default 10)")
+    p.add_argument("--sobel-verify", action="store_true",
+                   help="Verify near-duplicate pairs with a Sobel edge hash "
+                        "(ring 2.5): when both images have real edge "
+                        "structure, the pair groups iff the edge hashes "
+                        "agree within --sobel-threshold -- this rescues "
+                        "tone-changed duplicates pHash/dHash miss and "
+                        "vetoes similar-composition false positives; "
+                        "off by default")
+    p.add_argument("--sobel-threshold", type=int, default=10,
+                   help="Max Sobel edge-hash Hamming distance when "
+                        "--sobel-verify is on (default 10)")
+    p.add_argument("--near-mode", default="or", choices=["or", "and"],
+                   help="Near-duplicate rule: 'or' groups a pair when either hash is within "
+                        "threshold (default); 'and' requires both (stricter, fewer false "
+                        "positives on similar-composition photo sets)")
+    p.add_argument("--hash-algo", default="md5", choices=["md5", "sha256"],
+                   help="Exact-match hash (default md5)")
+    p.add_argument("--apply", action="store_true",
+                   help="Actually move files to quarantine (default is dry-run: report only)")
+    p.add_argument("--quarantine-dir", default=None,
+                   help="Quarantine directory (default: <root>_quarantine)")
+    p.add_argument("--report-dir", default="vision_cleanse_report",
+                   help="Where report.json and conflict_report.csv go (default ./vision_cleanse_report)")
+    p.add_argument("--coco", default=None, help="Optional COCO JSON annotation file to sync")
+    p.add_argument("--coco-output", default=None,
+                   help="Output path for the cleaned COCO file (default <coco>.cleaned.json)")
+    p.add_argument("--lang", default="vi", choices=list(SUPPORTED),
+                   help="Message language: vi, en, zh (default vi)")
+    p.add_argument("--min-size", type=int, default=32,
+                   help="Images with longest side below this are flagged tiny (default 32)")
+    p.add_argument("--yolo", action="store_true",
+                   help="Force YOLO annotation checks on (default: auto-detect .txt labels)")
+    p.add_argument("--charts", action="store_true",
+                   help="Export PNG charts (overview, boxes, cleaning) next to the report "
+                        "(requires: pip install vision-cleanse[charts])")
+    p.add_argument("--charts-dir", default=None,
+                   help="Charts directory (default: <report-dir>/charts)")
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    # Console Windows mặc định dùng cp1252, không in được tiếng Việt
+    # (đ, ễ, ...). Chuyển sang UTF-8 ngay từ đầu để CLI không vỡ
+    # trên Windows; môi trường không hỗ trợ thì bỏ qua.
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+    args = build_parser().parse_args(argv)
+    lang = normalize_lang(args.lang)
+    charts_dir = args.charts_dir
+    if args.charts and charts_dir is None:
+        charts_dir = f"{args.report_dir}/charts"
+    try:
+        report = clean(
+            root=args.root,
+            splits=tuple(args.splits),
+            phash_threshold=args.phash_threshold,
+            dhash_threshold=args.dhash_threshold,
+            hash_algo=args.hash_algo,
+            near_mode=args.near_mode,
+            dry_run=not args.apply,
+            quarantine_dir=args.quarantine_dir,
+            report_dir=args.report_dir,
+            coco_path=args.coco,
+            coco_output=args.coco_output,
+            lang=lang,
+            min_size=args.min_size,
+            yolo=True if args.yolo else None,
+            charts_dir=charts_dir,
+            sobel_verify=args.sobel_verify,
+            sobel_threshold=args.sobel_threshold,
+        )
+    except Exception as exc:
+        from .charts import ChartsUnavailableError
+
+        if isinstance(exc, ChartsUnavailableError):
+            print(f"Error: {exc}", file=sys.stderr)
+            return 2
+        raise
+    print(f"[{t('mode_apply' if args.apply else 'mode_dry', lang)}]")
+    print(t("scanned", lang, n=report["images_found"])
+          + f" (splits: {', '.join(report['splits_scanned']) or 'none'})")
+    if report["splits_missing"]:
+        print(t("missing_splits", lang, s=", ".join(report["splits_missing"])))
+    if report["images_unreadable"]:
+        print(t("unreadable", lang, n=len(report["images_unreadable"])))
+    print(t("dup_groups", lang, n=report["duplicate_groups"],
+            exact=report["groups_exact"], near=report["groups_near"]))
+    print(t("to_quarantine", lang, n=report["to_quarantine"])
+          + " | " + t("conflicts", lang, n=report["label_conflicts"]))
+    print(t("report", lang, p=f"{args.report_dir}/report.json"))
+    if "html_report" in report:
+        print(t("html_report", lang, p=report["html_report"]))
+    if "charts" in report:
+        ch = report["charts"]
+        print(t("charts_done", lang, n=len(ch["generated"]), p=ch["dir"])
+              + (f" ({len(ch['skipped'])} skipped)" if ch["skipped"] else ""))
+    if report["label_conflicts"]:
+        print(t("conflicts_file", lang, p=f"{args.report_dir}/conflict_report.csv"))
+    if "quarantine_dir" in report:
+        print(t("quarantine_dir", lang, p=report["quarantine_dir"], m=report["manifest"]))
+    if "coco_sync" in report:
+        print(t("coco_sync", lang, j=json.dumps(report["coco_sync"], ensure_ascii=False)))
+    health = report["health"]
+    print(f"--- {t('health_title', lang)} ---")
+    if health["clean"]:
+        print(t("health_ok", lang))
+    else:
+        c = health["counts"]
+        print(t("health_issues", lang, n=c["total"], e=c["errors"], w=c["warnings"]))
+        diag = health.get("label_diagnostics")
+        if diag and (diag["empty_label_files"] or diag["unknown_class_files"]
+                     or diag["malformed_lines"]):
+            rate = diag["empty_label_rate"]
+            print(t("label_diag", lang,
+                    files=diag["label_files"], lines=diag["lines_scanned"],
+                    malformed=diag["malformed_lines"],
+                    empty=diag["empty_label_files"],
+                    rate=f"{100.0 * rate:.1f}%" if rate is not None else "—",
+                    unknown=", ".join(map(str, diag["unknown_class_ids"])) or "—"))
+        for f in health["findings"][:50]:
+            detail = f" ({f['detail']})" if f["detail"] else ""
+            print(f"  [{f['severity']}] {t('check_' + f['check'], lang)}: "
+                  f"{f['path']}{detail}")
+        if len(health["findings"]) > 50:
+            print(f"  ... +{len(health['findings']) - 50} more (see report.json)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

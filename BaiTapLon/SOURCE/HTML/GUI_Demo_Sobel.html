@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GUI Demo — Toán tử Sobel × VisionCleanse</title>
+<style>
+  :root{ --blue:#4675E7; --ink:#1c2733; --muted:#5b6b7c; --card:#ffffff; --bg:#f2f6fd; --line:#d7e2f5; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header{ background:linear-gradient(120deg,#4675E7,#7ba2f0); color:#fff; padding:22px 28px; }
+  header h1{ margin:0 0 4px; font-size:24px; }
+  header p{ margin:0; opacity:.92; font-size:14px; }
+  main{ max-width:1180px; margin:0 auto; padding:20px 16px 40px; }
+  section{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:20px;
+           box-shadow:0 2px 10px rgba(70,117,231,.08); }
+  h2{ margin:0 0 6px; font-size:19px; color:var(--blue); }
+  .desc{ color:var(--muted); font-size:13.5px; margin:0 0 14px; line-height:1.5; }
+  .row{ display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+  .controls{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; margin-bottom:14px; font-size:14px; }
+  select, button{ font-size:14px; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button{ background:var(--blue); color:#fff; border-color:var(--blue); }
+  button.ghost{ background:#fff; color:var(--blue); }
+  button:hover{ filter:brightness(1.07); }
+  input[type=range]{ width:170px; accent-color:var(--blue); }
+  .fig{ text-align:center; }
+  .fig canvas{ border:1px solid var(--line); border-radius:8px; width:232px; height:232px; image-rendering:auto; background:#000; }
+  .fig.small canvas{ width:200px; height:200px; }
+  figcaption{ font-size:13px; color:var(--muted); margin-top:6px; }
+  .stat{ display:inline-block; background:#eef3fe; border:1px solid var(--line); border-radius:8px;
+         padding:6px 12px; font-size:14px; margin:4px 6px 0 0; }
+  .stat b{ color:var(--blue); }
+  table{ border-collapse:collapse; width:100%; font-size:14px; margin-top:10px; }
+  th, td{ border:1px solid var(--line); padding:7px 10px; text-align:center; }
+  th{ background:#eef3fe; }
+  .ok{ color:#1a8a3c; font-weight:700; }
+  .bad{ color:#c0392b; font-weight:700; }
+  .verdict{ margin-top:12px; font-size:15.5px; padding:10px 14px; border-radius:10px; background:#eef3fe; border:1px solid var(--line); }
+  code{ background:#eef3fe; padding:1px 5px; border-radius:5px; font-size:13px; }
+  footer{ color:var(--muted); font-size:12.5px; text-align:center; padding:0 16px 26px; line-height:1.6; }
+</style>
+</head>
+<body>
+<header>
+  <h1>GUI Demo — Toán tử Sobel &amp; vòng kiểm chứng 2.5 của VisionCleanse</h1>
+  <p>Bài tự nghiên cứu Xử lý ảnh (IN4152N01) — chạy hoàn toàn trong trình duyệt, không cần cài đặt.</p>
+</header>
+<main>
+
+<!-- ============ PHẦN 1: SOBEL TRỰC QUAN ============ -->
+<section>
+  <h2>Phần 1 — Toán tử Sobel trực quan</h2>
+  <p class="desc">Chọn toán tử và chế độ hiển thị để xem thành phần gradient Gx (cạnh dọc), Gy (cạnh ngang),
+     độ lớn G = √(Gx² + Gy²) và hướng cạnh. Thanh trượt ngưỡng biến ảnh độ lớn thành ảnh cạnh nhị phân.
+     Nút <b>Làm mờ</b> / <b>Âm bản</b> cho thấy năng lượng cạnh thay đổi thế nào — đây là cơ sở của chỉ số
+     <code>edge_energy</code> dùng để phát hiện ảnh mờ trong VisionCleanse.</p>
+  <div class="controls">
+    <label>Toán tử:
+      <select id="opSel">
+        <option value="sobel" selected>Sobel</option>
+        <option value="prewitt">Prewitt</option>
+        <option value="scharr">Scharr</option>
+        <option value="roberts">Roberts</option>
+        <option value="laplacian">Laplacian</option>
+      </select>
+    </label>
+    <label>Ngưỡng cạnh: <input type="range" id="thr" min="0" max="255" value="60"> <b id="thrVal">60</b></label>
+    <button class="ghost" id="btnBlur">Làm mờ (Gaussian r≈2)</button>
+    <button class="ghost" id="btnInvert">Âm bản</button>
+    <button class="ghost" id="btnReset">Khôi phục ảnh gốc</button>
+    <label>Tải ảnh của bạn: <input type="file" id="fileIn" accept="image/*"></label>
+  </div>
+  <div class="row">
+    <figure class="fig"><canvas id="cSrc" width="256" height="256"></canvas><figcaption>Ảnh gốc (xám)</figcaption></figure>
+    <figure class="fig"><canvas id="cGx" width="256" height="256"></canvas><figcaption>Gx — đáp ứng cạnh dọc</figcaption></figure>
+    <figure class="fig"><canvas id="cGy" width="256" height="256"></canvas><figcaption>Gy — đáp ứng cạnh ngang</figcaption></figure>
+    <figure class="fig"><canvas id="cMag" width="256" height="256"></canvas><figcaption>Độ lớn G = √(Gx² + Gy²)</figcaption></figure>
+    <figure class="fig"><canvas id="cBin" width="256" height="256"></canvas><figcaption>Ảnh cạnh sau ngưỡng</figcaption></figure>
+  </div>
+  <div>
+    <span class="stat">Năng lượng cạnh (edge_energy): <b id="energy">–</b></span>
+    <span class="stat">Tỉ lệ pixel cạnh sau ngưỡng: <b id="edgeRatio">–</b></span>
+  </div>
+</section>
+
+<!-- ============ PHẦN 2: KIỂM CHỨNG TRÙNG LẶP ============ -->
+<section>
+  <h2>Phần 2 — Kiểm chứng trùng lặp: vì sao cần thêm edge_hash (vòng 2.5)</h2>
+  <p class="desc">Ảnh B là một biến thể của ảnh A. Cả ba hàm băm đều rút gọn ảnh thành 64 bit; hai ảnh được coi là trùng
+     khi khoảng cách Hamming ≤ <b>10</b>. Theo luật vòng 2.5 trong <code>matchers.py</code>: khi cả hai ảnh đều có
+     <code>edge_hash</code> hợp lệ thì <b>edge_hash quyết định</b> (cứu hoặc phủ quyết), pHash/dHash chỉ còn vai trò dự phòng.
+     Hãy thử biến thể <b>Âm bản</b>: pHash lệch 62 bit, dHash lệch 64 bit (báo “không trùng”), nhưng edge_hash lệch 0 bit —
+     vì độ lớn gradient của Sobel không đổi khi đảo tông màu.</p>
+  <div class="controls">
+    <label>Biến thể của ảnh B:
+      <select id="variantSel">
+        <option value="same">Giống hệt</option>
+        <option value="invert" selected>Âm bản</option>
+        <option value="blur">Làm mờ r=2</option>
+        <option value="bright">Tăng sáng ×1,6</option>
+        <option value="gamma">Gamma 0,5</option>
+        <option value="jpeg">Nén JPEG mạnh (mô phỏng)</option>
+        <option value="crop">Crop 10%</option>
+        <option value="flip">Lật ngang</option>
+        <option value="other">Ảnh khác hoàn toàn</option>
+      </select>
+    </label>
+  </div>
+  <div class="row">
+    <figure class="fig small"><canvas id="cA" width="200" height="200"></canvas><figcaption>Ảnh A — gốc</figcaption></figure>
+    <figure class="fig small"><canvas id="cB" width="200" height="200"></canvas><figcaption>Ảnh B — biến thể</figcaption></figure>
+    <div style="flex:1; min-width:340px;">
+      <table>
+        <tr><th>Hàm băm</th><th>Khoảng cách Hamming</th><th>Ngưỡng</th><th>Kết luận riêng</th></tr>
+        <tr><td>pHash (DCT)</td><td id="dP">–</td><td>10</td><td id="vP">–</td></tr>
+        <tr><td>dHash (gradient thô [−1, +1])</td><td id="dD">–</td><td>10</td><td id="vD">–</td></tr>
+        <tr><td><b>edge_hash (Sobel, vòng 2.5)</b></td><td id="dE">–</td><td>10</td><td id="vE">–</td></tr>
+      </table>
+      <div class="verdict" id="finalVerdict">–</div>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer>
+  GUI demo phục vụ bài tự nghiên cứu — thuật toán bám đúng mã nguồn Python trong repo vision-cleanse
+  (extractors.py: sobel_magnitude, edge_hash, edge_energy; matchers.py: luật vòng 2.5, ngưỡng Hamming 10).
+  Số liệu thực nghiệm chính thức xem tại BaiTapLon/experiment/results.json trên nhánh bài tập lớn.
+</footer>
+
+<script>
+"use strict";
+/* ---------- tiện ích ---------- */
+function mkCanvas(w, h){ const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+function median(a){ const s = [...a].sort((x, y) => x - y); const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+function grayOf(src, w, h){
+  const c = mkCanvas(w, h), x = c.getContext("2d");
+  x.drawImage(src, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, out = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) out[i] = 0.299 * d[4*i] + 0.587 * d[4*i+1] + 0.114 * d[4*i+2];
+  return out;
+}
+function drawGray(dst, g, w, h){
+  const x = dst.getContext("2d"), img = x.createImageData(w, h);
+  for (let i = 0; i < w * h; i++){ const v = Math.max(0, Math.min(255, g[i]));
+    img.data[4*i] = img.data[4*i+1] = img.data[4*i+2] = v; img.data[4*i+3] = 255; }
+  const tmp = mkCanvas(w, h); tmp.getContext("2d").putImageData(img, 0, 0);
+  x.imageSmoothingEnabled = false; x.clearRect(0, 0, dst.width, dst.height);
+  x.drawImage(tmp, 0, 0, dst.width, dst.height);
+}
+/* ---------- cảnh mẫu tự vẽ (nhiều cạnh: nhà, núi, cây, bàn cờ, sọc chéo) ---------- */
+function drawScene(ctx, W, H, other){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  if (!other){ g.addColorStop(0, "#aebfd4"); g.addColorStop(1, "#e8edf3"); }
+  else { g.addColorStop(0, "#d8cfc0"); g.addColorStop(1, "#f3ede2"); }
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#f5c542"; ctx.beginPath(); ctx.arc(W*0.8, H*0.16, W*0.07, 0, 7); ctx.fill();
+  ctx.fillStyle = "#7d8ea3"; ctx.beginPath();
+  ctx.moveTo(0, H*0.55); ctx.lineTo(W*0.3, H*0.22); ctx.lineTo(W*0.55, H*0.55); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#93a5ba"; ctx.beginPath();
+  ctx.moveTo(W*0.35, H*0.55); ctx.lineTo(W*0.62, H*0.3); ctx.lineTo(W, H*0.55); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#5d6d80"; ctx.fillRect(0, H*0.55, W, H*0.45);
+  if (!other){
+    ctx.fillStyle = "#e8e2d4"; ctx.fillRect(W*0.12, H*0.62, W*0.3, H*0.3);
+    ctx.fillStyle = "#8a4b2a"; ctx.beginPath();
+    ctx.moveTo(W*0.08, H*0.62); ctx.lineTo(W*0.27, H*0.48); ctx.lineTo(W*0.46, H*0.62); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#33414f"; ctx.fillRect(W*0.22, H*0.76, W*0.09, H*0.16);
+    ctx.fillStyle = "#9fc3e8"; ctx.fillRect(W*0.15, H*0.67, W*0.07, H*0.09); ctx.fillRect(W*0.33, H*0.67, W*0.07, H*0.09);
+    ctx.fillStyle = "#4c7a45"; ctx.beginPath(); ctx.arc(W*0.62, H*0.66, W*0.075, 0, 7); ctx.fill();
+    ctx.fillStyle = "#6b4a2b"; ctx.fillRect(W*0.605, H*0.72, W*0.03, H*0.12);
+    const s = W*0.045, x0 = W*0.74, y0 = H*0.6;
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++){
+      ctx.fillStyle = (r + c) % 2 ? "#222" : "#eee"; ctx.fillRect(x0 + c*s, y0 + r*s, s, s); }
+  } else {
+    ctx.fillStyle = "#3c4b5c"; ctx.beginPath(); ctx.arc(W*0.3, H*0.7, W*0.16, 0, 7); ctx.fill();
+    ctx.fillStyle = "#c8d2dd"; ctx.beginPath(); ctx.arc(W*0.68, H*0.72, W*0.11, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#222"; ctx.lineWidth = 5;
+    for (let i = 0; i < 5; i++){ ctx.beginPath(); ctx.moveTo(W*0.08 + i*W*0.05, H*0.6); ctx.lineTo(W*0.3 + i*W*0.05, H*0.95); ctx.stroke(); }
+    ctx.fillStyle = "#222"; ctx.fillRect(W*0.55, H*0.12, W*0.36, H*0.1);
+  }
+}
+/* ---------- toán tử gradient ---------- */
+const KERNELS = {
+  sobel:     { kx: [[-1,0,1],[-2,0,2],[-1,0,1]], ky: [[-1,-2,-1],[0,0,0],[1,2,1]] },
+  prewitt:   { kx: [[-1,0,1],[-1,0,1],[-1,0,1]], ky: [[-1,-1,-1],[0,0,0],[1,1,1]] },
+  scharr:    { kx: [[-3,0,3],[-10,0,10],[-3,0,3]], ky: [[-3,-10,-3],[0,0,0],[3,10,3]] },
+  roberts:   { kx: [[1,0],[0,-1]], ky: [[0,1],[-1,0]] },
+  laplacian: { kx: [[0,1,0],[1,-4,1],[0,1,0]], ky: null }
+};
+function conv(g, w, h, k){
+  const n = k.length, r = n >> 1, out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    let s = 0;
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++){
+      const xx = Math.min(w - 1, Math.max(0, x + i - r)), yy = Math.min(h - 1, Math.max(0, y + j - r));
+      s += k[j][i] * g[yy * w + xx];
+    }
+    out[y * w + x] = s;
+  }
+  return out;
+}
+function gradients(g, w, h, op){
+  const K = KERNELS[op];
+  const gx = conv(g, w, h, K.kx);
+  const gy = K.ky ? conv(g, w, h, K.ky) : new Float32Array(w * h);
+  const mag = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) mag[i] = Math.hypot(gx[i], gy[i]);
+  return { gx, gy, mag };
+}
+function scaledAbs(a, norm){
+  const out = new Float32Array(a.length);
+  for (let i = 0; i < a.length; i++) out[i] = Math.min(255, Math.abs(a[i]) / norm * 255);
+  return out;
+}
+/* ---------- PHẦN 1 ---------- */
+const scene = mkCanvas(256, 256); drawScene(scene.getContext("2d"), 256, 256, false);
+let srcCanvas = scene;
+function renderPart1(){
+  const W = 256, H = 256, op = document.getElementById("opSel").value;
+  const thr = +document.getElementById("thr").value;
+  document.getElementById("thrVal").textContent = thr;
+  const g = grayOf(srcCanvas, W, H);
+  drawGray(document.getElementById("cSrc"), g, W, H);
+  const { gx, gy, mag } = gradients(g, W, H, op);
+  const norm = op === "scharr" ? 4 : op === "sobel" ? 4 : op === "prewitt" ? 3 : 1;
+  drawGray(document.getElementById("cGx"), scaledAbs(gx, norm), W, H);
+  drawGray(document.getElementById("cGy"), scaledAbs(gy, norm), W, H);
+  let maxMag = 0; for (const v of mag) if (v > maxMag) maxMag = v;
+  const magDisp = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) magDisp[i] = maxMag ? mag[i] / maxMag * 255 : 0;
+  drawGray(document.getElementById("cMag"), magDisp, W, H);
+  const bin = new Float32Array(W * H); let edgeCount = 0;
+  for (let i = 0; i < W * H; i++){ bin[i] = magDisp[i] >= thr ? 255 : 0; if (bin[i]) edgeCount++; }
+  drawGray(document.getElementById("cBin"), bin, W, H);
+  const g128 = grayOf(srcCanvas, 128, 128);
+  const m128 = gradients(g128, 128, 128, "sobel").mag;
+  let sum = 0; for (const v of m128) sum += v;
+  document.getElementById("energy").textContent = (sum / m128.length / 4).toFixed(2);
+  document.getElementById("edgeRatio").textContent = (100 * edgeCount / (W * H)).toFixed(1) + " %";
+}
+function transformed(kind){
+  const c = mkCanvas(256, 256), x = c.getContext("2d");
+  if (kind === "blur") x.filter = "blur(2px)";
+  if (kind === "invert") x.filter = "invert(1)";
+  x.drawImage(scene, 0, 0);
+  return c;
+}
+document.getElementById("opSel").addEventListener("change", renderPart1);
+document.getElementById("thr").addEventListener("input", renderPart1);
+document.getElementById("btnBlur").addEventListener("click", () => { srcCanvas = transformed("blur"); renderPart1(); renderPart2(); });
+document.getElementById("btnInvert").addEventListener("click", () => { srcCanvas = transformed("invert"); renderPart1(); renderPart2(); });
+document.getElementById("btnReset").addEventListener("click", () => { srcCanvas = scene; renderPart1(); renderPart2(); });
+document.getElementById("fileIn").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { const c = mkCanvas(256, 256);
+    c.getContext("2d").drawImage(img, 0, 0, 256, 256);
+    srcCanvas = c; renderPart1(); renderPart2(); URL.revokeObjectURL(img.src); };
+  img.src = URL.createObjectURL(f);
+});
+/* ---------- hàm băm (bám extractors.py) ---------- */
+function edgeHashBits(src){
+  const g = grayOf(src, 32, 32);
+  const mag = gradients(g, 32, 32, "sobel").mag;
+  const blocks = [];
+  for (let by = 0; by < 8; by++) for (let bx = 0; bx < 8; bx++){
+    let s = 0;
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) s += mag[(by*4 + y)*32 + bx*4 + x];
+    blocks.push(s / 16);
+  }
+  const med = median(blocks);
+  return blocks.map(v => v > med ? 1 : 0);
+}
+function dct2(g, n){
+  const out = new Float32Array(n * n), cos = Math.cos;
+  for (let u = 0; u < n; u++) for (let v = 0; v < n; v++){
+    let s = 0;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++)
+      s += g[y*n + x] * cos((2*x + 1) * v * Math.PI / (2*n)) * cos((2*y + 1) * u * Math.PI / (2*n));
+    out[u*n + v] = s;
+  }
+  return out;
+}
+function pHashBits(src){
+  const g = grayOf(src, 32, 32), d = dct2(g, 32), low = [];
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) low.push(d[y*32 + x]);
+  const med = median(low);
+  return low.map(v => v > med ? 1 : 0);
+}
+function dHashBits(src){
+  const g = grayOf(src, 9, 8), bits = [];
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) bits.push(g[y*9 + x] > g[y*9 + x + 1] ? 1 : 0);
+  return bits;
+}
+function hamming(a, b){ let d = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++; return d; }
+/* ---------- PHẦN 2 ---------- */
+function variantCanvas(kind){
+  const c = mkCanvas(256, 256), x = c.getContext("2d");
+  if (kind === "other"){ drawScene(x, 256, 256, true); return c; }
+  if (kind === "invert") x.filter = "invert(1)";
+  if (kind === "blur") x.filter = "blur(2px)";
+  if (kind === "bright") x.filter = "brightness(1.6)";
+  if (kind === "jpeg") x.filter = "blur(0.7px) contrast(1.05)";
+  if (kind === "crop"){ x.drawImage(scene, 13, 13, 230, 230, 0, 0, 256, 256); return c; }
+  if (kind === "flip"){ x.translate(256, 0); x.scale(-1, 1); }
+  x.drawImage(scene, 0, 0);
+  x.filter = "none";
+  if (kind === "gamma"){
+    const img = x.getImageData(0, 0, 256, 256), d = img.data;
+    for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++)
+      d[i+k] = 255 * Math.pow(d[i+k] / 255, 0.5);
+    x.putImageData(img, 0, 0);
+  }
+  return c;
+}
+function verdictCell(el, d){ el.innerHTML = d <= 10 ? '<span class="ok">TRÙNG</span>' : '<span class="bad">KHÔNG TRÙNG</span>'; }
+function renderPart2(){
+  const kind = document.getElementById("variantSel").value;
+  const A = scene, B = variantCanvas(kind);
+  drawGray(document.getElementById("cA"), grayOf(A, 200, 200), 200, 200);
+  const xB = document.getElementById("cB").getContext("2d");
+  xB.clearRect(0, 0, 200, 200); xB.drawImage(B, 0, 0, 200, 200);
+  const dP = hamming(pHashBits(A), pHashBits(B));
+  const dD = hamming(dHashBits(A), dHashBits(B));
+  const dE = hamming(edgeHashBits(A), edgeHashBits(B));
+  document.getElementById("dP").textContent = dP + " / 64";
+  document.getElementById("dD").textContent = dD + " / 64";
+  document.getElementById("dE").textContent = dE + " / 64";
+  verdictCell(document.getElementById("vP"), dP);
+  verdictCell(document.getElementById("vD"), dD);
+  verdictCell(document.getElementById("vE"), dE);
+  const dup = dE <= 10;
+  document.getElementById("finalVerdict").innerHTML =
+    "Kết luận theo luật vòng 2.5 (edge_hash quyết định): <b>" +
+    (dup ? '<span class="ok">HAI ẢNH LÀ TRÙNG LẶP</span>' : '<span class="bad">HAI ẢNH KHÔNG TRÙNG</span>') +
+    "</b>" + (kind === "invert" && dup ? " — pHash và dHash đều bị âm bản đánh lừa, chỉ edge_hash nhận ra." : "");
+}
+document.getElementById("variantSel").addEventListener("change", renderPart2);
+renderPart1();
+renderPart2();
+</script>
+</body>
+</html>
